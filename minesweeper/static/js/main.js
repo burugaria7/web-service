@@ -304,6 +304,7 @@ function resetData() {
     n = 0;
     flag_n = 0;
     countstart_f = true;
+    bombplace = [];
 }
 
 /**
