@@ -10,12 +10,8 @@ class IndexView(View):
 
     def get(self, request, *args, **kwargs):
         # テンプレートのレンダリング
-        return render(request, 'sweep/main.html')
+        return render(request, 'minesweeper/index.html')
 
 
 index = IndexView.as_view()
-
-
-def main(request):
-    return render(request, 'sweep/index.html', {'sweep': main})
 # Create your views here.
