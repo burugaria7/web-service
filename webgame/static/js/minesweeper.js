@@ -105,6 +105,7 @@ let countstart_f = true;
 
 let item1 = new Path2D();
 let item2 = new Path2D();
+let backtitle = new Path2D();
 
 let item1_n = null;
 let item2_n = null;
@@ -126,23 +127,7 @@ function init() {
     context = canvas.getContext("2d");
     // イベントリスナの追加
     canvas.addEventListener('click', onCanvasLClick, false);
-    // canvas.oncontextmenu = function () {
-    //     let loc = windowToCanvas(e.clientX, e.clientY);
-    //     // canvas.onContextmenu = "return false;"
-    //     switch (phase) {
-    //     case 2:     // 以下を追加
-    //         // タッチフェーズでセルがクリックされた
-    //         for (let y = 0; y < cells.length; y++) {
-    //             for (let x = 0; x < cells[0].length; x++) {
-    //                 if (cells[y][x].isWithin(loc.x, loc.y)) {
-    //                     putflag(x, y);
-    //                     break;
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     return false;
-    // }
+
     canvas.addEventListener('contextmenu', onCanvasRClick, false);
 
     drawTitle();
@@ -179,7 +164,7 @@ function mainLoop() {
             isTitleGuide = !isTitleGuide;
         }
         drawTitle();
-        drawTimer();
+        drawBackTitle(backtitle);
         break;
     case 1:             // 以下を追加
         // カウントダウンフェーズ
@@ -196,7 +181,6 @@ function mainLoop() {
         }
         drawBackground();
         drawCount();
-        drawTimer();
         if (mapmake_f){
             putbomb();
             allcount();
@@ -211,22 +195,14 @@ function mainLoop() {
         }
         // タッチフェーズ
         now = Date.now();
-        // if (now - lastReducedTime >= 1000) {
-        //     lastReducedTime = Date.now();
-        //     if (--remainingTime <= 0) {
-        //         // 残り時間がなくなったらゲームオーバーフェーズに移行する。
-        //         lastTimeUpTime = Date.now();
-        //         phase = 3;
-        //     }
-        // }
         drawBackground();
         drawMap();
-        // drawRemainingTime();
         drawTimer();
         drawflagnum();
         drawbombnum();
         drawitem1(item1);
         drawitem2(item2);
+        // drawBackTitle(backtitle);
         break;
     case 3:     // 以下を追加
         // ゲームオーバーフェーズ
@@ -248,11 +224,10 @@ function mainLoop() {
         }
         // // ゲームオーバーフェーズ
         drawclear();
-        drawTimer();
         break;
     case 5:     // 以下を追加
         now = Date.now();
-        if (now - lastTimeUpTime >= 10000) {
+        if (now - lastTimeUpTime >= 3000) {
             // タイムアップ表示後3秒後にタイトルフェーズに移行する。
             phase = 0;
         }
@@ -261,7 +236,6 @@ function mainLoop() {
         drawBackground();
         drawMap();
         drawflagnum();
-        drawTimer();
         break;
     }
 }
@@ -338,20 +312,6 @@ function resetMap() {
             map[y][x] = 0;
         }
     }
-    // map = [
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    //     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    // ];
     for (let y = 0; y < data.length; y++) {
         for (let x = 0; x < data[0].length; x++) {
             data[y][x] = 0;
@@ -364,13 +324,13 @@ function resetMap() {
 function putbomb() {
     resetMap();
     mine_n = 0;
-    while (mine_n != bomb_n) {
+    while (mine_n !== bomb_n) {
         max_x = map[0].length - 1;
         min = 0;
         max_y = map.length - 1;
         yy = Math.floor(Math.random() * (max_y + 1 - min)) + min;
         xx = Math.floor(Math.random() * (max_x + 1 - min)) + min;
-        if (map[yy][xx] != -1) {
+        if (map[yy][xx] !== -1) {
             map[yy][xx] = -1;
             bombplace.push([xx, yy]);
             mine_n += 1;
@@ -379,14 +339,33 @@ function putbomb() {
 }
 
 function firstopen() {
-    while (true) {
+    for (let i = 0; i < 100; i++) {
         max_x = map[0].length - 3;
         min_x = 2;
         max_y = map.length - 3;
         min_y = 2;
         yy = Math.floor(Math.random() * (max_y + 1 - min_y)) + min_y;
         xx = Math.floor(Math.random() * (max_x + 1 - min_x)) + min_x;
-        if (map[yy][xx] != -1 && data[yy][xx] != 2) {
+        console.log(i)
+        if (map[yy][xx] !== -1 && data[yy][xx] === 0) {
+            console.log(xx, yy)
+            open(xx, yy, false);
+            aroundopen(xx, yy, true);
+            break;
+        }
+    }
+}
+function item1open() {
+    for (let i = 0; i < 100; i++) {
+        max_x = map[0].length - 1;
+        min_x = 0;
+        max_y = map.length - 1;
+        min_y = 0;
+        yy = Math.floor(Math.random() * (max_y + 1 - min_y)) + min_y;
+        xx = Math.floor(Math.random() * (max_x + 1 - min_x)) + min_x;
+        console.log(i)
+        if (map[yy][xx] !== -1 && data[yy][xx] === 0) {
+            console.log(xx, yy)
             open(xx, yy, false);
             aroundopen(xx, yy, true);
             break;
@@ -395,34 +374,31 @@ function firstopen() {
 }
 
 function open(x, y, f = true) {
-    if (0 <= y & y < map.length & 0 <= x & x < map[0].length){
-        if (map[y][x] != -1 & data[y][x] == 0) {
+    if (0 <= y && y < map.length && 0 <= x && x < map[0].length){
+        if (map[y][x] !== -1 && data[y][x] === 0) {
             data[y][x] = 1;
             // map[y][x] = countbomb(x, y);
             n += 1;
-            if (n == map.length * map[0].length - bomb_n){
+            if (n === map.length * map[0].length - bomb_n){
                 lastTimeUpTime = Date.now();
                 countfinish();
                 phase = 4;
             }
-            if (countbomb(x, y) == 0 & f) {
+            if (countbomb(x, y) === 0 && f) {
                 aroundopen(x, y, true);
             }
         }
-    }
-    else{
-        return;
     }
 }
 
 function allcount() {
     for (let y = 0; y < map.length; y++) {
-            for (let x = 0; x < map[0].length; x++) {
-                if (map[y][x] != -1){
-                    map[y][x] = countbomb(x, y)
-                }
+        for (let x = 0; x < map[0].length; x++) {
+            if (map[y][x] !== -1){
+                map[y][x] = countbomb(x, y)
             }
         }
+    }
 }
 
 function aroundopen(x, y, f = true) {
@@ -440,9 +416,9 @@ function countbomb(x, y) {
     let ct = 0;
     for (let i = -1; i < 2; i++){
         for (let j = -1; j < 2; j++){
-            if (i != 0 | j != 0){
-                if (0 <= x + j & x + j < map[0].length & 0 <= y + i & y + i < map.length){
-                    if (map[y + i][x + j] == -1){
+            if (i !== 0 || j !== 0){
+                if (0 <= x + j & x + j < map[0].length & 0 <= y + i && y + i < map.length){
+                    if (map[y + i][x + j] === -1){
                     ct += 1;
                     }
                 }
@@ -453,12 +429,14 @@ function countbomb(x, y) {
 }
 
 function openbomb() {
+    console.log(bombplace)
     for (let i = 0; i < bombplace.length; i++) {
-        max = bombplace.length - 1;
-        min = 0;
-        xx = Math.floor(Math.random() * (max + 1 - min)) + min;
-        if (data[bombplace[xx][1]][bombplace[xx][0]] != 2) {
-            data[bombplace[xx][1]][bombplace[xx][0]] = 2;
+        // max = bombplace.length - 1;
+        // min = 0;
+        // xx = Math.floor(Math.random() * (max + 1 - min)) + min;
+        if (data[bombplace[i][1]][bombplace[i][0]] !== 2) {
+            data[bombplace[i][1]][bombplace[i][0]] = 2;
+            console.log(xx)
             flag_n += 1
             break;
         }
@@ -472,6 +450,11 @@ function onCanvasLClick(e) {
     let loc = windowToCanvas(e.clientX, e.clientY);
     switch (phase) {
     case 0:
+        if (context.isPointInPath(backtitle, loc.x, loc.y)) {
+            console.log("back")
+            window.location.href = document.referrer;
+            break;
+        }
 	    // タイトルフェーズで画面がクリックされた
         lastCountDownTime = Date.now();
 	    resetData();
@@ -488,8 +471,14 @@ function onCanvasLClick(e) {
 	    phase = 1;
 	    break;
     case 2:     // 以下を追加
+        // if (context.isPointInPath(backtitle, loc.x, loc.y)) {
+        //     console.log("back")
+        //     window.location.href = document.referrer;
+        //     break;
+        // }
         if (context.isPointInPath(item1, loc.x, loc.y) && item1_n > 0) {
-            firstopen();
+            console.log("ok")
+            item1open();
             item1_n -= 1;
             break;
         }
@@ -535,8 +524,8 @@ function onCanvasRClick(e) {
  * @return true: 正解, false: ミス
  */
 function isTouched(x, y) {
-    if (data[y][x] != 2){
-        if (map[y][x] == -1) {
+    if (data[y][x] !== 2){
+        if (map[y][x] === -1) {
             lastTimeUpTime = Date.now();
             countfinish();
             phase = 5;
@@ -547,11 +536,11 @@ function isTouched(x, y) {
 }
 
 function putflag(x, y) {
-    if (data[y][x] == 0) {
+    if (data[y][x] === 0) {
         data[y][x] = 2;
         flag_n += 1;
     }
-    else if (data[y][x] == 2){
+    else if (data[y][x] === 2){
         data[y][x] = 0;
         flag_n -= 1;
     }
@@ -575,13 +564,13 @@ function drawMap() {
             context.fillStyle = "gray";
             context.strokeRect(left, top, CELL_SIZE, CELL_SIZE);
             context.fillRect(left, top, CELL_SIZE, CELL_SIZE);
-            if (data[y][x] == 1) {
-                if (map[y][x] == 0) context.fillStyle = "#FF773E";
-                else if(map[y][x] == 1) context.fillStyle = "blue";
-                else if(map[y][x] == 2) context.fillStyle = "lime";
-                else if(map[y][x] == 3) context.fillStyle = "red";
-                else if(map[y][x] == 4) context.fillStyle = "fuchsia";
-                else if(map[y][x] == 5) context.fillStyle = "yellow";
+            if (data[y][x] === 1) {
+                if (map[y][x] === 0) context.fillStyle = "#FF773E";
+                else if(map[y][x] === 1) context.fillStyle = "blue";
+                else if(map[y][x] === 2) context.fillStyle = "lime";
+                else if(map[y][x] === 3) context.fillStyle = "red";
+                else if(map[y][x] === 4) context.fillStyle = "fuchsia";
+                else if(map[y][x] === 5) context.fillStyle = "yellow";
                 else{
                     context.fillStyle = "yellow";
                 }
@@ -590,18 +579,25 @@ function drawMap() {
                 context.textBaseline = "middle";
                 context.fillText(map[y][x], STAGE_LEFT + CELL_SIZE * (x + 0.5), STAGE_TOP + CELL_SIZE * (y + 0.5));
             }
-            else if(data[y][x] == 2){
+            else if(data[y][x] === 2){
                 context.fillStyle = "white";
                 context.font = "20px arial";
                 context.textAlign = "center";
                 context.textBaseline = "middle";
                 context.fillText("F", STAGE_LEFT + CELL_SIZE * (x + 0.5), STAGE_TOP + CELL_SIZE * (y + 0.5));
             }
-            if (phase == 5 || phase == 4){
-                if (map[y][x] == -1){
+            if (phase === 5 || phase === 4){
+                if (map[y][x] === -1){
                     context.fillStyle = "skyblue";
                     context.strokeRect(left, top, CELL_SIZE, CELL_SIZE);
                     context.fillRect(left, top, CELL_SIZE, CELL_SIZE);
+                    if (data[y][x] === 2) {
+                        context.fillStyle = "white";
+                        context.font = "20px arial";
+                        context.textAlign = "center";
+                        context.textBaseline = "middle";
+                        context.fillText("F", STAGE_LEFT + CELL_SIZE * (x + 0.5), STAGE_TOP + CELL_SIZE * (y + 0.5));
+                    }
                 }
             }
 
@@ -787,20 +783,20 @@ function drawbombnum() {
 
 
 //時間カウント
-function timer(){
-    countloopTimer = setTimeout(timer, INTERVAL);
-
-    let t = Date.now() - s_time;
-    let h = Math.floor(t / 3600000);
-    let m = Math.floor((t - 3600000 * h) / 60000);
-    let ms = t % 60000;
-    h = ("00" + h).slice(-2);
-    m = ("00" + m).slice(-2);
-    ms = ("00000" + ms).slice(-5);
-
-    return h + ":" + m + ":" + ms.slice(0, 2) + ":" + ms.slice(2, 5);
-}
-
+// function timer(){
+//     countloopTimer = setTimeout(timer, INTERVAL);
+//
+//     let t = Date.now() - s_time;
+//     let h = Math.floor(t / 3600000);
+//     let m = Math.floor((t - 3600000 * h) / 60000);
+//     let ms = t % 60000;
+//     h = ("00" + h).slice(-2);
+//     m = ("00" + m).slice(-2);
+//     ms = ("00000" + ms).slice(-5);
+//
+//     return h + ":" + m + ":" + ms.slice(0, 2) + ":" + ms.slice(2, 5);
+// }
+//
 //タイマースタート
 function countstart(){
     s_time = Date.now();
@@ -811,6 +807,29 @@ function countstart(){
 function countfinish(){
     console.log("test2");
     clearTimeout(countloopTimer);
+}
+
+function timer(){
+    let t = Date.now() - s_time;
+
+    return slice_timer(t);
+    // if (phase == 2) {
+    //     return slice_timer(t);
+    // }
+    // else{
+    //     return t;
+    // }
+}
+
+function slice_timer(t){
+    let h = Math.floor(t / 3600000);
+    let m = Math.floor((t - 3600000 * h) / 60000);
+    let ms = t % 60000;
+    h = ("00" + h).slice(-2);
+    m = ("00" + m).slice(-2);
+    ms = ("00000" + ms).slice(-5);
+
+    return h + ":" + m + ":" + ms.slice(0, 2) + ":" + ms.slice(2, 5);
 }
 
 function drawitem1(contex, y = 100, x = 10 , w = 40, h = 40) {
@@ -824,6 +843,7 @@ function drawitem1(contex, y = 100, x = 10 , w = 40, h = 40) {
     context.font = "20px serif";
     context.fillText(String(item1_n), x + 20, y + 10);
 }
+
 function drawitem2(contex, y = 200, x = 10 , w = 40, h = 40) {
     contex.rect(x, y, w, h);
     context.strokeStyle = "white";
@@ -836,4 +856,14 @@ function drawitem2(contex, y = 200, x = 10 , w = 40, h = 40) {
     context.fillText(String(item2_n), x + 20, y + 10);
 }
 
-
+function drawBackTitle(contex, y = 5, x = 5, w = 60, h = 40) {
+    contex.rect(x, y, w, h);
+    context.strokeStyle = "white";
+    context.fillStyle = "#00FFFF";
+    context.stroke(contex);
+    context.fill(contex);
+    context.fillStyle = "white";
+    context.textAlign = "center";
+    context.font = "20px serif";
+    context.fillText("back", x + 30, y + 20);
+}

@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'minesweeper.apps.MinesweeperConfig',
+    'tictactoe.apps.TictactoeConfig',
+    'title.apps.TitleConfig',
 ]
 
 MIDDLEWARE = [
