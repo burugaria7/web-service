@@ -4,44 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <title></title>
-    <script language="javascript" type="text/javascript">
-        function OnButtonClick() {
-            target = document.getElementById("output");
-            target.innerHTML = "Penguin";
-
-            //import firebase from '@/plugins/firebase'
-
-            // Set the configuration for your app
-            // TODO: Replace with your project's config object
-            var config = {
-                apiKey: "AIzaSyBd0lVP2y9PXw8A0xQCc7C-t7UWgPdk7kY",
-                authDomain: "recess-web.firebaseapp.com",
-                databaseURL: "https://recess-web-default-rtdb.firebaseio.com/",
-                storageBucket: "gs://recess-web.appspot.com"
-            };
-
-            firebase.initializeApp(config);
-
-            // Get a reference to the database service
-            var database = firebase.database();
-
-            var commentsRef = firebase.database().ref('comments');
-            commentsRef.set({ body: "テスト！" });
-
-
-        }
-    </script>
 </head>
 
 <body>
     遊び大全 へようこそ！
     <a href="minesweeper/">MineSweeper</a>
     <a href="tictactoe/">Tictactoe</a>
-    <br>
-    <input type="button" value="Exec" onclick="OnButtonClick();" /><br />
-    <br />
-    <div id="output"></div>
 </body>
 
 </html>

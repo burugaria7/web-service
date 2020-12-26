@@ -1,3 +1,5 @@
+var database = firebase.database();
+
 /**
  * **** **** **** **** **** **** **** ****
  * 定数
@@ -94,7 +96,7 @@ for (let y = 0; y < cells.length; y++) {
 
 let turn = null;
 let winner = null;
-let done = false;
+let backtitle = new Path2D();
 
 
 /**
@@ -117,6 +119,8 @@ function init() {
 
     // ゲームデータのリセット
     resetData();
+
+    firebasetest();
 
 }
 /**
@@ -147,6 +151,7 @@ function mainLoop() {
             isTitleGuide = !isTitleGuide;
         }
         drawTitle();
+        drawBackTitle(backtitle);
         break;
     case 1:             // 以下を追加
         // カウントダウンフェーズ
@@ -323,6 +328,10 @@ function onCanvasLClick(e) {
     let loc = windowToCanvas(e.clientX, e.clientY);
     switch (phase) {
     case 0:
+        if (context.isPointInPath(backtitle, loc.x, loc.y)) {
+            window.location.href = document.referrer;
+            break;
+        }
 	    // タイトルフェーズで画面がクリックされた
         lastCountDownTime = Date.now();
 	    resetData();
@@ -474,7 +483,23 @@ function drawCount() {
     context.shadowBlur = 20;
     context.fillText(strCount, canvas.width / 2, STAGE_TOP - 70, STAGE_WIDTH);
 }
+function drawBackTitle(contex, y = 5, x = 5, w = 60, h = 40) {
+    contex.rect(x, y, w, h);
+    context.strokeStyle = "white";
+    context.fillStyle = "#00FFFF";
+    context.stroke(contex);
+    context.fill(contex);
+    context.fillStyle = "white";
+    context.textAlign = "center";
+    context.font = "20px serif";
+    context.fillText("back", x + 30, y + 20);
+}
 
+function firebasetest() {
+    var commentsRef = firebase.database().ref('comments');
+    commentsRef.set({ body: "テスト！" });
+    console.log("firebasetest");
+}
 
 
 // /**
