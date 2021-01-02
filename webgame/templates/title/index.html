@@ -37,31 +37,45 @@
         let i = 1;
         let id = 1;
 
+        // function DBset() {
+        //     var name = document.getElementById("input_name").value;
+        //     var commentsRef = firebase.database().ref('users/user' + i);
+        //     commentsRef.set({ "name": name });
+        //     i += 1;
+        // }
+
         function DBset() {
             var name = document.getElementById("input_name").value;
-            var commentsRef = firebase.database().ref('users/user' + i);
+            var commentsRef = firebase.database().ref('pro/' + i);
             commentsRef.set({ "name": name });
             i += 1;
         }
+        //
+        // setInterval(checkDB, 1000);
 
-        setInterval(checkDB, 1000);
+        // checkDB();
 
         function checkDB() {
             // var checkRef = firebase.database().ref('users');
-            var checkRef1 = firebase.database().ref('tictactoe/rooms/room1/move/player1');
-            checkRef1.on('value', (snapshot1) => {
-                var checkRef2 = firebase.database().ref('tictactoe/rooms/room1/move/player1/' + id);
-                checkRef2.on('value', (snapshot2) => {
-                    try{
-                        console.log(id);
-                        document.getElementById("output_message1").innerHTML = snapshot2.val().x;
-                        document.getElementById("output_message2").innerHTML = snapshot2.val().y;
-                        id += 1;
-                    }
-                    catch (e) {
-                        console.log("e");
-                    }
-                });
+            var checkRef1 = firebase.database().ref('pro');
+            checkRef1.on('child_added', (snapshot1) => {
+                // console.log("hello" + id);
+                console.log(snapshot1.key);
+                console.log(snapshot1.val());
+
+
+                // var checkRef2 = firebase.database().ref('tictactoe/rooms/room1/move/player1/' + id);
+                // checkRef2.on('child_added', (snapshot2) => {
+                //     try{
+                //         console.log(snapshot2.val());
+                //         document.getElementById("output_message1").innerHTML = snapshot2.val().x;
+                //         document.getElementById("output_message2").innerHTML = snapshot2.val().y;
+                //     }
+                //     catch (e) {
+                //         console.log("e");
+                //     }
+                // });
+                // id += 1;
             });
         }
 
@@ -70,7 +84,7 @@
             var commentsRef = firebase.database().ref('users/user' + nameid);
             commentsRef.once('value', (snapshot) => {
                 console.log(snapshot.val());
-                document.getElementById("output_message").innerHTML = snapshot.val().name;
+                document.getElementById("output_message3").innerHTML = snapshot.val().name;
             })
         }
 
@@ -78,6 +92,7 @@
 
     <div id="output_message1"></div>
     <div id="output_message2"></div>
+    <div id="output_message3"></div>
 
 
 </body>

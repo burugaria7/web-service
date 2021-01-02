@@ -98,6 +98,7 @@ let winner = null;
 let backtitle = new Path2D();
 let turn = null;
 let enemy_moved = null;
+let enemy_move = null;
 
 
 /**
@@ -135,6 +136,9 @@ function runMainLoop() {
 /**
  * メインループ
  */
+
+checkDB();
+
 function mainLoop() {
     let mainLoopTimer = setTimeout(mainLoop, INTERVAL);
     let now = -1;
@@ -170,10 +174,10 @@ function mainLoop() {
     case 2:                 // 以下を追加
         // タッチフェーズ
         now = Date.now();
-        let move = firebaseon();
-        if (enemy_moved && move[0] !== -1){
-            console.log("move " + move);
-            put(move[0], move[1]);
+        // let move = firebaseon();
+        if (enemy_moved){
+            console.log("move " + enemy_move);
+            put(enemy_move[0], enemy_move[1]);
             enemy_moved = false;
         }
         drawBackground();
@@ -375,6 +379,7 @@ function isTouched(x, y) {
         firebaseset(x, y);
         // enemy_moved = true;
         // firebaseon();
+        firebaseset2(x - 1, y - 1);
         console.log("hi");
     }
 }
@@ -511,47 +516,63 @@ function firebaseset(x, y) {
     commentsRef.set({ "x" : x, "y" : y });
 }
 
-function firebaseon() {
-    let enemy_move = [-1, -1];
-    console.log(turn);
-    var Ref = firebase.database().ref('tictactoe/rooms/room1/move/player1');
-    var xRef = firebase.database().ref('tictactoe/rooms/room1/move/player1/' + (turn - 1));
-    var yRef = firebase.database().ref('tictactoe/rooms/room1/move/player1/');
-    // Ref.once('child_added',snapshot => {
-    //     console.log(snapshot.val());
-    //     console.log("ok");
-    // })
-    // yRef.on('child_added',snapshot => {
-    //     console.log(snapshot);
-    //     console.log("y");
-    // })
-    if (!(enemy_moved)){
-
-        Ref.on('child_added', (snapshot) => {
-
-            snapshot.forEach((childSnapshot) => {
-                console.log("on" + turn);
-                var childKey = childSnapshot.key;
-                var childData = childSnapshot.val();
-                console.log(childKey);
-                console.log(childData);
-                if (childKey === "x"){
-                    enemy_move[0] = childData;
-                }
-                else if (childKey === "y"){
-                    enemy_move[1] = childData;
-                    enemy_moved = true;
-                }
-                console.log(enemy_move);
-                console.log("okk");
-                console.log(enemy_moved);
-            });
-
-        });
-
-    }
-    return enemy_move
+function firebaseset2(x, y) {
+    console.log("set " + turn);
+    var commentsRef = firebase.database().ref('tictactoe/rooms/room1/move/player2/' + (turn));
+    commentsRef.set({ "x" : x, "y" : y });
 }
+
+function checkDB() {
+    var checkRef1 = firebase.database().ref('tictactoe/rooms/room1/move/player2');
+    checkRef1.on('child_added', (snapshot1) => {
+        console.log(snapshot1.key);
+        console.log(snapshot1.val());
+        enemy_move = [snapshot1.val().x, snapshot1.val().y];
+        enemy_moved = true;
+    });
+}
+
+// function firebaseon() {
+//     let enemy_move = [-1, -1];
+//     console.log(turn);
+//     var Ref = firebase.database().ref('tictactoe/rooms/room1/move/player1');
+//     var xRef = firebase.database().ref('tictactoe/rooms/room1/move/player1/' + (turn - 1));
+//     var yRef = firebase.database().ref('tictactoe/rooms/room1/move/player1/');
+//     // Ref.once('child_added',snapshot => {
+//     //     console.log(snapshot.val());
+//     //     console.log("ok");
+//     // })
+//     // yRef.on('child_added',snapshot => {
+//     //     console.log(snapshot);
+//     //     console.log("y");
+//     // })
+//     if (!(enemy_moved)){
+//
+//         Ref.on('child_added', (snapshot) => {
+//
+//             snapshot.forEach((childSnapshot) => {
+//                 console.log("on" + turn);
+//                 var childKey = childSnapshot.key;
+//                 var childData = childSnapshot.val();
+//                 console.log(childKey);
+//                 console.log(childData);
+//                 if (childKey === "x"){
+//                     enemy_move[0] = childData;
+//                 }
+//                 else if (childKey === "y"){
+//                     enemy_move[1] = childData;
+//                     enemy_moved = true;
+//                 }
+//                 console.log(enemy_move);
+//                 console.log("okk");
+//                 console.log(enemy_moved);
+//             });
+//
+//         });
+//
+//     }
+//     return enemy_move
+// }
 
 
 
