@@ -14,4 +14,17 @@ class IndexView(View):
 
 
 index = IndexView.as_view()
+
+
+class AuthView(View):
+    """
+    インデックスビュー
+    """
+
+    def get(self, request, *args, **kwargs):
+        # テンプレートのレンダリング
+        return render(request, 'Auth/index.html')
+
+
+auth = AuthView.as_view()
 # Create your views here.

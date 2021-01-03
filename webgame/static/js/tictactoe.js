@@ -1,3 +1,5 @@
+var database = firebase.database();
+
 /**
  * **** **** **** **** **** **** **** ****
  * 定数
@@ -20,7 +22,6 @@ STAGE_TOP = STAGE_HEIGHT / 2 - CELL_SIZE * 1.5 + 40
 // else{
 //     STAGE_LEFT = 0;
 // }
-
 
 /**
  * **** **** **** **** **** **** **** ****
@@ -92,9 +93,11 @@ for (let y = 0; y < cells.length; y++) {
     }
 }
 
-let turn = null;
+let player = null;
 let winner = null;
-let done = false;
+let backtitle = new Path2D();
+let turn = null;
+let enemy_moved = null;
 
 
 /**
@@ -117,7 +120,6 @@ function init() {
 
     // ゲームデータのリセット
     resetData();
-
 }
 /**
  * メインループの開始
@@ -147,6 +149,7 @@ function mainLoop() {
             isTitleGuide = !isTitleGuide;
         }
         drawTitle();
+        drawBackTitle(backtitle);
         break;
     case 1:             // 以下を追加
         // カウントダウンフェーズ
@@ -167,7 +170,12 @@ function mainLoop() {
     case 2:                 // 以下を追加
         // タッチフェーズ
         now = Date.now();
-
+        let move = firebaseon();
+        if (enemy_moved && move[0] !== -1){
+            console.log("move " + move);
+            put(move[0], move[1]);
+            enemy_moved = false;
+        }
         drawBackground();
         drawMap();
         drawTurn();
@@ -235,8 +243,10 @@ function windowToCanvas(wx, wy) {
 function resetData() {
     resetMap();
     count = 3;
-    turn = 1;
+    player = 1;
     winner = null;
+    turn = 1;
+    enemy_moved = false;
 }
 
 /**
@@ -258,11 +268,11 @@ function resetMap() {
  * **** **** **** **** **** **** **** ****
  */
 function put(x, y){
-    map[y][x] = turn;
+    map[y][x] = player;
     if (check_winner(x, y)){
         lastTimeUpTime = Date.now();
-        winner = turn;
-        phase = turn === 1 ? 4:5;
+        winner = player;
+        phase = player === 1 ? 4:5;
         return;
     }
     if (check_finish()){
@@ -271,7 +281,8 @@ function put(x, y){
         phase = 3;
         return;
     }
-    turn *= -1;
+    player *= -1;
+    turn += 1;
 }
 
 function check_finish(){
@@ -298,7 +309,7 @@ function connected(x, y, step_x, step_y){
         let index_x = step_x;
         let index_y = step_y;
         while (0 <= x + index_x && x + index_x < 3 && 0 <= y + index_y && y + index_y < 3){
-            if (map[y + index_y][x + index_x] !== turn){
+            if (map[y + index_y][x + index_x] !== player){
                 break;
             }
             else{
@@ -323,6 +334,10 @@ function onCanvasLClick(e) {
     let loc = windowToCanvas(e.clientX, e.clientY);
     switch (phase) {
     case 0:
+        if (context.isPointInPath(backtitle, loc.x, loc.y)) {
+            window.location.href = document.referrer;
+            break;
+        }
 	    // タイトルフェーズで画面がクリックされた
         lastCountDownTime = Date.now();
 	    resetData();
@@ -357,6 +372,10 @@ function onCanvasLClick(e) {
 function isTouched(x, y) {
     if (map[y][x] === 0){
         put(x, y);
+        firebaseset(x, y);
+        // enemy_moved = true;
+        // firebaseon();
+        console.log("hi");
     }
 }
 
@@ -446,7 +465,7 @@ function drawTurn() {
     context.shadowOffsetX = null;
     context.shadowOffsetY = null;
     context.shadowBlur = null;
-    let str = turn === 1 ? "〇" : "☓";
+    let str = player === 1 ? "〇" : "☓";
     context.fillText(String(str) + "のターンです", 320, 80);
 }
 
@@ -474,120 +493,65 @@ function drawCount() {
     context.shadowBlur = 20;
     context.fillText(strCount, canvas.width / 2, STAGE_TOP - 70, STAGE_WIDTH);
 }
+function drawBackTitle(contex, y = 5, x = 5, w = 60, h = 40) {
+    contex.rect(x, y, w, h);
+    context.strokeStyle = "white";
+    context.fillStyle = "#00FFFF";
+    context.stroke(contex);
+    context.fill(contex);
+    context.fillStyle = "white";
+    context.textAlign = "center";
+    context.font = "20px serif";
+    context.fillText("back", x + 30, y + 20);
+}
 
+function firebaseset(x, y) {
+    console.log("set " + turn);
+    var commentsRef = firebase.database().ref('tictactoe/rooms/room1/move/player1/' + (turn - 1));
+    commentsRef.set({ "x" : x, "y" : y });
+}
 
+function firebaseon() {
+    let enemy_move = [-1, -1];
+    console.log(turn);
+    var Ref = firebase.database().ref('tictactoe/rooms/room1/move/player1');
+    var xRef = firebase.database().ref('tictactoe/rooms/room1/move/player1/' + (turn - 1));
+    var yRef = firebase.database().ref('tictactoe/rooms/room1/move/player1/');
+    // Ref.once('child_added',snapshot => {
+    //     console.log(snapshot.val());
+    //     console.log("ok");
+    // })
+    // yRef.on('child_added',snapshot => {
+    //     console.log(snapshot);
+    //     console.log("y");
+    // })
+    if (!(enemy_moved)){
 
-// /**
-//  * 残り時間の描画
-//  */
-// function drawRemainingTime() {
-//     context.fillStyle = remainingTime <= 5 ? "red" : "white";
-//     context.font = "48px arial";
-//     context.textAlign = "center";
-//     context.textBaseline = "middle";
-//     context.shadowColor = null;
-//     context.shadowOffsetX = null;
-//     context.shadowOffsetY = null;
-//     context.shadowBlur = null;
-//     context.fillText(String(remainingTime), 320, 40);
-// }
-// function drawTimer() {
-//     context.fillStyle = "white";
-//     context.font = "48px arial";
-//     context.textAlign = "center";
-//     context.textBaseline = "middle";
-//     context.shadowColor = null;
-//     context.shadowOffsetX = null;
-//     context.shadowOffsetY = null;
-//     context.shadowBlur = null;
-//     context.fillText(String(timer()), 320, 30);
-// }
-// /**
-//  * タイムアップの描画
-//  */
-// function drawTimeUp() {
-//     context.fillStyle = "white";
-//     context.font = "384px arial";
-//     context.textAlign = "center";
-//     context.textBaseline = "top";
-//     context.shadowColor = "black";
-//     context.shadowOffsetX = 5;
-//     context.shadowOffsetY = 5;
-//     context.shadowBlur = 20;
-//     context.fillText("TIME UP!", canvas.width / 2, STAGE_TOP, STAGE_WIDTH);
-// }
-//
-// function drawbombnum() {
-//     context.fillStyle = "white";
-//     context.font = "20px arial";
-//     context.textAlign = "left";
-//     context.textBaseline = "top";
-//     context.shadowColor = null;
-//     context.shadowOffsetX = null;
-//     context.shadowOffsetY = null;
-//     context.shadowBlur = null;
-//     context.fillText("Bomb", 516, 16);
-//
-//     context.fillStyle = "white";
-//     context.font = "20px arial";
-//     context.textAlign = "right";
-//     context.textBaseline = "top";
-//     context.shadowColor = null;
-//     context.shadowOffsetX = null;
-//     context.shadowOffsetY = null;
-//     context.shadowBlur = null;
-//     context.fillText(String(bomb_n), 608, 16);
-// }
-//
-//
-// //時間カウント
-// function timer(){
-//     countloopTimer = setTimeout(timer, INTERVAL);
-//
-//     let t = Date.now() - s_time;
-//     let h = Math.floor(t / 3600000);
-//     let m = Math.floor((t - 3600000 * h) / 60000);
-//     let ms = t % 60000;
-//     h = ("00" + h).slice(-2);
-//     m = ("00" + m).slice(-2);
-//     ms = ("00000" + ms).slice(-5);
-//
-//     return h + ":" + m + ":" + ms.slice(0, 2) + ":" + ms.slice(2, 5);
-// }
-//
-// //タイマースタート
-// function countstart(){
-//     s_time = Date.now();
-//     setTimeout(timer, 0);
-// }
-//
-// //タイマー終了
-// function countfinish(){
-//     console.log("test2");
-//     clearTimeout(countloopTimer);
-// }
-//
-// function drawitem1(contex, y = 100, x = 10 , w = 40, h = 40) {
-//     contex.rect(x, y, w, h);
-//     context.strokeStyle = "white";
-//     context.fillStyle = "#32EEFF";
-//     context.stroke(contex);
-//     context.fill(contex);
-//     context.fillStyle = "white";
-//     context.textAlign = "center";
-//     context.font = "20px serif";
-//     context.fillText(String(item1_n), x + 20, y + 10);
-// }
-// function drawitem2(contex, y = 200, x = 10 , w = 40, h = 40) {
-//     contex.rect(x, y, w, h);
-//     context.strokeStyle = "white";
-//     context.fillStyle = "#FF1A6F";
-//     context.stroke(contex);
-//     context.fill(contex);
-//     context.fillStyle = "white";
-//     context.textAlign = "center";
-//     context.font = "20px serif";
-//     context.fillText(String(item2_n), x + 20, y + 10);
-// }
+        Ref.on('child_added', (snapshot) => {
+
+            snapshot.forEach((childSnapshot) => {
+                console.log("on" + turn);
+                var childKey = childSnapshot.key;
+                var childData = childSnapshot.val();
+                console.log(childKey);
+                console.log(childData);
+                if (childKey === "x"){
+                    enemy_move[0] = childData;
+                }
+                else if (childKey === "y"){
+                    enemy_move[1] = childData;
+                    enemy_moved = true;
+                }
+                console.log(enemy_move);
+                console.log("okk");
+                console.log(enemy_moved);
+            });
+
+        });
+
+    }
+    return enemy_move
+}
+
 
 
