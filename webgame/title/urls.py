@@ -5,6 +5,7 @@ app_name = 'title'
 urlpatterns = [
     # ex: title/
     path('', views.index, name='index'),
+    path('auth/', views.auth, name='index'),
     path('minesweeper/', include('minesweeper.urls')),
     path('tictactoe/', include('tictactoe.urls')),
 ]
