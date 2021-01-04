@@ -4,8 +4,8 @@ from . import views
 app_name = 'title'
 urlpatterns = [
     # ex: title/
-    path('', views.index, name='index'),
-    path('auth/', views.auth, name='index'),
-    path('minesweeper/', include('minesweeper.urls')),
-    path('tictactoe/', include('tictactoe.urls')),
+    path('title/', views.index, name='index'),
+    path('', views.auth, name='index'),
+    path('title/minesweeper/', include('minesweeper.urls')),
+    path('title/tictactoe/', include('tictactoe.urls')),
 ]
