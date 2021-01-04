@@ -12,7 +12,7 @@
     <a href="minesweeper/">MineSweeper</a>
     <a href="tictactoe/">Tictactoe</a><br>
 
-    <input type="button" onclick="" value="マッチング"><br>
+    <input type="button" onclick="matching()" value="マッチング"><br>
 
     <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase.js"></script>
     <script>
@@ -30,7 +30,76 @@
 
     <script>
         var database = firebase.database();
+        var user;
+        let room_id = 1;
+        let find = false;
 
+        var gameref = firebase.database().ref('rooms/tictactoe_id');
+
+        firebase.auth().onAuthStateChanged((userinfo) => {
+          if (userinfo) {
+            user = userinfo;
+            console.log("login");
+          } else {
+              console.log("not login");
+          }
+        });
+
+
+        function matching() {
+            console.log("match");
+            if (check_room()){
+                console.log("enter");
+                enter_room();
+            }
+            // else{
+            // console.log("create");
+            //     create_room();
+            // }
+        }
+
+        function create_room() {
+            var roomref = firebase.database().ref('rooms/tictactoe_id/room' + room_id);
+            var playerref = firebase.database()
+                .ref('rooms/tictactoe_id/room' + room_id + '/player_1')
+            roomref.set({ "now_people" : 1});
+            playerref.set({ "name" : user.displayName });
+        }
+
+        function enter_room() {
+            var roomref = firebase.database().ref('rooms/tictactoe_id/room' + room_id);
+            var playerref = firebase.database()
+                .ref('rooms/tictactoe_id/room' + room_id + '/player_2');
+            roomref.set({ "now_people" : 2});
+            playerref.set({ "name" : user.displayName });
+        }
+
+        function checkDB() {
+            var checkRef1 = firebase.database().ref('rooms/tictactoe_id');
+            checkRef1.on('child_added', (snapshot1) => {
+                console.log(snapshot1.key);
+                console.log(snapshot1.val());
+                enemy_move = [snapshot1.val().x, snapshot1.val().y];
+                enemy_moved = true;
+            });
+        }
+        
+        function check_room() {
+            gameref.on('value', (snapshot) => {
+                snapshot.forEach((childSnapshot) => {
+                    var childKey = childSnapshot.key;
+                    var childData = childSnapshot.val().now_people;
+                    console.log(childKey);
+                    console.log(childData);
+                    if (childData === 1){
+                        console.log("in");
+                        return true;
+                    }
+                    room_id += 1;
+                });
+            });
+            return false;
+        }
     </script>
 
 
