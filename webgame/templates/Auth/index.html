@@ -54,63 +54,66 @@
         firebase.initializeApp(config);
     </script>
 
-    <script type="text/javascript">
+  <script type="text/javascript">
 
-        /*
-      Firebase Authentcation を使った認証サンプル 01
-      Firebase Authentication UI を使い、サインイン用のUIを生成
-      ポップアップウィンドウで認証画面を表示、サインイン後元の画面に移動
-      サインアウト ボタンと、Googleの表示名をウェルカムメッセージとして表示
-      サインアウト 用の関数「signOut」を定義
-    
-      */
+  /*
+  Firebase Authentcation を使った認証サンプル 02
+  Google認証用のオブジェクトを生成
+  認証用の関数「signIn」を定義
+  サインアウト 用の関数「signOut」を定義
+  認証の状態をチェックして、「サインイン」「サインアウト 」のボタンを出し分ける
+  */
 
-        const ui = new firebaseui.auth.AuthUI(firebase.auth());
-        const uiConfig = {
-            callbacks: {
-                signInSuccessWithAuthResult: function (authResult, redirectUrl) {
-                    return true;
-                },
-            },
-            signInFlow: 'popup',
-            signInSuccessUrl: '/auth',
-            signInOptions: [
-                firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-            ],
-            tosUrl: 'sample01.html',
-            privacyPolicyUrl: '/auth'
-        };
+  const provider = new firebase.auth.GoogleAuthProvider();
 
-        ui.start('#auth', uiConfig);
+  function signIn() {
+  firebase.auth().signInWithPopup(provider)
+  .then(result => {
+      console.log('ログインしました。');
 
-        firebase.auth().onAuthStateChanged(user => {
-            if (user) {
-                const signOutMessage = `
+  }).catch(error => {
+        const signinError = `
+        サインインエラー
+        エラーメッセージ： ${error.message}
+        エラーコード: ${error.code}
+        `
+  　　　console.log(signinError);
+  });
+  }
+
+  function signOut() {
+  firebase.auth().onAuthStateChanged(user => {
+    firebase
+      .auth()
+      .signOut()
+      .then(() => {
+        console.log('ログアウトしました');
+        location.reload();
+      })
+      .catch((error) => {
+        console.log(`ログアウト時にエラーが発生しました (${error})`);
+      });
+  });
+  }
+
+  firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+        const signOutMessage = `
         <p>Hello, ${user.displayName}!<\/p>
-        <button type="submit"  onClick="signOut()">サインアウト<\/button>
+        <button class="btn btn-primary" type="submit"  onClick="signOut()">サインアウト<\/button>
         `;
-                document.getElementById('auth').innerHTML = signOutMessage;
-                console.log('ログインしています');
+        document.getElementById('auth').innerHTML =  signOutMessage;
+        console.log('ログインしています');
 
-            }
-        });
+    } else {
+          const signInMessage = `
+          <button class="btn btn-primary" type="submit"  onClick="signIn()">サインイン<\/button>
+          `;
+          document.getElementById('auth').innerHTML = signInMessage;       
+    }
+  });
 
-        function signOut() {
-            firebase.auth().onAuthStateChanged(user => {
-                firebase
-                    .auth()
-                    .signOut()
-                    .then(() => {
-                        console.log('ログアウトしました');
-                        location.reload();
-                    })
-                    .catch((error) => {
-                        console.log(`ログアウト時にエラーが発生しました (${error})`);
-                    });
-            });
-        }
-
-    </script>
+  </script>
 
 
 </body>
