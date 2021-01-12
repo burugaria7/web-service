@@ -49,71 +49,121 @@
             apiKey: "AIzaSyBd0lVP2y9PXw8A0xQCc7C-t7UWgPdk7kY",
             authDomain: "recess-web.firebaseapp.com",
             databaseURL: "https://recess-web-default-rtdb.firebaseio.com/",
+            projectId: "recess-web",
             storageBucket: "gs://recess-web.appspot.com"
         };
         firebase.initializeApp(config);
     </script>
 
-  <script type="text/javascript">
+    <script type="text/javascript">
+        const provider = new firebase.auth.GoogleAuthProvider();
 
-  /*
-  Firebase Authentcation を使った認証サンプル 02
-  Google認証用のオブジェクトを生成
-  認証用の関数「signIn」を定義
-  サインアウト 用の関数「signOut」を定義
-  認証の状態をチェックして、「サインイン」「サインアウト 」のボタンを出し分ける
-  */
 
-  const provider = new firebase.auth.GoogleAuthProvider();
+        function GsignIn() {
+            firebase.auth().signInWithPopup(provider)
+                .then(result => {
+                    console.log('ログインしました。');
 
-  function signIn() {
-  firebase.auth().signInWithPopup(provider)
-  .then(result => {
-      console.log('ログインしました。');
-
-  }).catch(error => {
-        const signinError = `
+                }).catch(error => {
+                    const signinError = `
         サインインエラー
         エラーメッセージ： ${error.message}
         エラーコード: ${error.code}
-        `
-  　　　console.log(signinError);
-  });
-  }
+        `　　　
+                    console.log(signinError);
+                });
+        }
 
-  function signOut() {
-  firebase.auth().onAuthStateChanged(user => {
-    firebase
-      .auth()
-      .signOut()
-      .then(() => {
-        console.log('ログアウトしました');
-        location.reload();
-      })
-      .catch((error) => {
-        console.log(`ログアウト時にエラーが発生しました (${error})`);
-      });
-  });
-  }
+        function signOut() {
+            firebase.auth().onAuthStateChanged(user => {
+                firebase
+                    .auth()
+                    .signOut()
+                    .then(() => {
+                        console.log('ログアウトしました');
+                        location.reload();
+                    })
+                    .catch((error) => {
+                        console.log(`ログアウト時にエラーが発生しました (${error})`);
+                    });
+            });
+        }
 
-  firebase.auth().onAuthStateChanged(user => {
-    if (user) {
-        const signOutMessage = `
+
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) { //logined
+
+                //uidから登録済みかDBを検索
+                //登録済みなら飛ばす？
+
+                var db = firebase.firestore();
+
+                db.collection("users").get().then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        console.log(`${doc.id}`);
+                        console.log(`name:=> ${doc.data().name}`);
+                        //document.write(`${doc.id}<br/>`);
+                        //document.write(`:=> ${doc.data().name}<br/><br/>`);
+                    });
+                });
+
+
+                //未登録なら名前入力フォームを表示
+                //もろもろ登録処理
+
+
+                //登録がうまくいっていたら飛ばす？
+
+                const signOutMessage = `
         <p>Hello, ${user.displayName}!<\/p>
         <button class="btn btn-primary" type="submit"  onClick="signOut()">サインアウト<\/button>
         `;
-        document.getElementById('auth').innerHTML =  signOutMessage;
-        console.log('ログインしています');
 
-    } else {
-          const signInMessage = `
-          <button class="btn btn-primary" type="submit"  onClick="signIn()">サインイン<\/button>
-          `;
-          document.getElementById('auth').innerHTML = signInMessage;       
-    }
-  });
 
-  </script>
+
+                document.getElementById('auth').innerHTML = signOutMessage;
+                console.log('ログインしています');
+
+            } else { //not logined
+
+                const signInMessage = `
+                <br>
+                <div>
+                メールアドレス<input id="mailAddress" type="mailAddress" required/>
+                </div>
+                <div>
+                パスワード<input id="password" type="password" required/>
+                </div>
+                <button id="login">ログイン</button>
+                <button id="register">新規登録</button>
+                <button class="btn btn-primary" type="submit"  onClick="GsignIn()">Googleでサインイン<\/button>
+                `;
+                document.getElementById('auth').innerHTML = signInMessage;
+
+                register.addEventListener('click', function(e) {
+                    var mailAddress = document.getElementById('mailAddress').value;
+                    var password = document.getElementById('password').value;
+
+                    firebase.auth().createUserWithEmailAndPassword(mailAddress, password)
+                        .catch(function(error) {
+                            alert('登録できません（' + error.message + '）');
+                        });
+                });
+
+                //ログイン処理
+                login.addEventListener('click', function(e) {
+                    var mailAddress = document.getElementById('mailAddress').value;
+                    var password = document.getElementById('password').value;
+
+                    firebase.auth().signInWithEmailAndPassword(mailAddress, password)
+                        .catch(function(error) {
+                            alert('ログインできません（' + error.message + '）');
+                        });
+                });
+
+            }
+        });
+    </script>
 
 
 </body>
