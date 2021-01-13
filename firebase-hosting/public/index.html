@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+
+<body>
+    遊び大全 へようこそ！
+    <a href="auth/">auth</a>
+    <a href="minesweeper/">MineSweeper</a>
+    <a href="tictactoe/">Tictactoe</a><br>
+
+    <input type="text" id="input_name" value="">
+    <input type="button" onclick="DBset()" value="DB送信"><br>
+    <input type="text" id="input_nameid" value="">
+    <input type="button" onclick="DBadd()" value="DB取得">
+
+
+    <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase.js"></script>
+    <script>
+        // TODO: Replace the following with your app's Firebase project configuration
+        // For Firebase JavaScript SDK v7.20.0 and later, `measurementId` is an optional field
+        var config = {
+            apiKey: "AIzaSyBd0lVP2y9PXw8A0xQCc7C-t7UWgPdk7kY",
+            authDomain: "recess-web.firebaseapp.com",
+            databaseURL: "https://recess-web-default-rtdb.firebaseio.com/",
+            storageBucket: "gs://recess-web.appspot.com"
+        };
+        firebase.initializeApp(config);
+    </script>
+
+
+    <script>
+        var database = firebase.database();
+
+        let i = 1;
+        let id = 1;
+
+        // function DBset() {
+        //     var name = document.getElementById("input_name").value;
+        //     var commentsRef = firebase.database().ref('users/user' + i);
+        //     commentsRef.set({ "name": name });
+        //     i += 1;
+        // }
+
+        function DBset() {
+            var name = document.getElementById("input_name").value;
+            var commentsRef = firebase.database().ref('pro/' + i);
+            commentsRef.set({ "name": name });
+            i += 1;
+        }
+        //
+        // setInterval(checkDB, 1000);
+
+        // checkDB();
+
+        function checkDB() {
+            // var checkRef = firebase.database().ref('users');
+            var checkRef1 = firebase.database().ref('pro');
+            checkRef1.on('child_added', (snapshot1) => {
+                // console.log("hello" + id);
+                console.log(snapshot1.key);
+                console.log(snapshot1.val());
+
+
+                // var checkRef2 = firebase.database().ref('tictactoe/rooms/room1/move/player1/' + id);
+                // checkRef2.on('child_added', (snapshot2) => {
+                //     try{
+                //         console.log(snapshot2.val());
+                //         document.getElementById("output_message1").innerHTML = snapshot2.val().x;
+                //         document.getElementById("output_message2").innerHTML = snapshot2.val().y;
+                //     }
+                //     catch (e) {
+                //         console.log("e");
+                //     }
+                // });
+                // id += 1;
+            });
+        }
+
+        function DBadd() {
+            var nameid = document.getElementById("input_nameid").value;
+            var commentsRef = firebase.database().ref('users/user' + nameid);
+            commentsRef.once('value', (snapshot) => {
+                console.log(snapshot.val());
+                document.getElementById("output_message3").innerHTML = snapshot.val().name;
+            })
+        }
+
+    </script>
+
+    <div id="output_message1"></div>
+    <div id="output_message2"></div>
+    <div id="output_message3"></div>
+
+
+</body>
+
+</html>
