@@ -15,6 +15,7 @@
     <input type="button" onclick="matching()" value="マッチング"><br>
 
     <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.4/firebase-firestore.js"></script>
     <script>
         // TODO: Replace the following with your app's Firebase project configuration
         // For Firebase JavaScript SDK v7.20.0 and later, `measurementId` is an optional field
@@ -22,70 +23,79 @@
             apiKey: "AIzaSyBd0lVP2y9PXw8A0xQCc7C-t7UWgPdk7kY",
             authDomain: "recess-web.firebaseapp.com",
             databaseURL: "https://recess-web-default-rtdb.firebaseio.com/",
-            storageBucket: "gs://recess-web.appspot.com"
+            storageBucket: "gs://recess-web.appspot.com",
+            projectId: "recess-web"
         };
         firebase.initializeApp(config);
     </script>
 
 
     <script>
-        var database = firebase.database();
+        var db = firebase.firestore();
+
         var user;
-        let room_id = 1;
-        let find = false;
-
-        var gameref = firebase.database().ref('rooms/tictactoe_id');
-
-        firebase.auth().onAuthStateChanged((userinfo) => {
-          if (userinfo) {
-            user = userinfo;
-            console.log("login");
-          } else {
-              console.log("not login");
-          }
-        });
-
+        let room_id = null;
 
         function matching() {
             console.log("match");
-            if (check_room()){
-                console.log("enter");
+            check_room();
+            if (find){
+                console.log("find");
                 enter_room();
             }
-            // else{
-            // console.log("create");
-            //     create_room();
-            // }
+            else if (!find){
+                console.log("not find");
+                create_room();
+            }
+        }
+
+        function test(){
+            db.collection("cities").doc("LA").set({
+                name: "Los Angeles",
+                state: "CA",
+                country: "USA"
+            })
+            .then(function() {
+                console.log("Document successfully written!");
+            })
+            .catch(function(error) {
+                console.error("Error writing document: ", error);
+            });
+        }
+
+        function test1() {
+            console.log("1");
+            db.collection("cities").get().then(function(querySnapshot) {
+                console.log("test1");
+                querySnapshot.forEach(function(doc) {
+                    console.log(doc.id, " => ", doc.data());
+                });
+            });
         }
 
         function create_room() {
-            var roomref = firebase.database().ref('rooms/tictactoe_id/room' + room_id);
-            var playerref = firebase.database()
-                .ref('rooms/tictactoe_id/room' + room_id + '/player_1')
+            console.log("create");
+            var roomref = database.ref('rooms/tictactoe_id/room' + room_id);
+            var playerref = database.ref('rooms/tictactoe_id/room' + room_id + '/player_1')
             roomref.set({ "now_people" : 1});
             playerref.set({ "name" : user.displayName });
         }
 
         function enter_room() {
-            var roomref = firebase.database().ref('rooms/tictactoe_id/room' + room_id);
-            var playerref = firebase.database()
-                .ref('rooms/tictactoe_id/room' + room_id + '/player_2');
-            roomref.set({ "now_people" : 2});
+            console.log("enter");
+            var roomref = database.ref('rooms/tictactoe_id/room' + room_id);
+            var playerref = database.ref('rooms/tictactoe_id/room' + room_id + '/player_2');
+            let now = get_nowpeople();
+            console.log("now");
+            console.log(now);
+            roomref.update({ "now_people" : now + 1});
             playerref.set({ "name" : user.displayName });
         }
 
-        function checkDB() {
-            var checkRef1 = firebase.database().ref('rooms/tictactoe_id');
-            checkRef1.on('child_added', (snapshot1) => {
-                console.log(snapshot1.key);
-                console.log(snapshot1.val());
-                enemy_move = [snapshot1.val().x, snapshot1.val().y];
-                enemy_moved = true;
-            });
-        }
-        
         function check_room() {
-            gameref.on('value', (snapshot) => {
+
+            return gameref.once('value').then((snapshot) => {
+                console.log("check");
                 snapshot.forEach((childSnapshot) => {
                     var childKey = childSnapshot.key;
                     var childData = childSnapshot.val().now_people;
@@ -93,13 +103,84 @@
                     console.log(childData);
                     if (childData === 1){
                         console.log("in");
-                        return true;
+                        find = true;
+                        return;
                     }
                     room_id += 1;
                 });
             });
-            return false;
         }
+
+        // var database = firebase.database();
+        // var user;
+        // let room_id = 1;
+        // let find = false;
+        //
+        // var gameref = database.ref('rooms/tictactoe_id');
+        //
+        // firebase.auth().onAuthStateChanged((userinfo) => {
+        //   if (userinfo) {
+        //     user = userinfo;
+        //     console.log("login");
+        //   } else {
+        //       console.log("not login");
+        //   }
+        // });
+        //
+        //
+        // function matching() {
+        //     console.log("match");
+        //     check_room();
+        //     if (find){
+        //         console.log("find");
+        //         enter_room();
+        //     }
+        //     else if (!find){
+        //         console.log("not find");
+        //         create_room();
+        //     }
+        //     room_id = 1;
+        // }
+        //
+        //
+        // function checkDB() {
+        //     var checkRef1 = database.ref('rooms/tictactoe_id');
+        //     checkRef1.on('child_added', (snapshot1) => {
+        //         console.log(snapshot1.key);
+        //         console.log(snapshot1.val());
+        //         enemy_move = [snapshot1.val().x, snapshot1.val().y];
+        //         enemy_moved = true;
+        //     });
+        // }
+        //
+        // function get_nowpeople() {
+        //     var roomref = database.ref('rooms/tictactoe_id/room' + room_id);
+        //     roomref.once('value').then((snapshot) => {
+        //         var childData = snapshot.val().now_people;
+        //         console.log("value");
+        //         console.log(childData);
+        //         return childData;
+        //     });
+        // }
+        //
+        // function check_room() {
+        //
+        //     return gameref.once('value').then((snapshot) => {
+        //         console.log("check");
+        //         snapshot.forEach((childSnapshot) => {
+        //             var childKey = childSnapshot.key;
+        //             var childData = childSnapshot.val().now_people;
+        //             console.log(childKey);
+        //             console.log(childData);
+        //             if (childData === 1){
+        //                 console.log("in");
+        //                 find = true;
+        //                 return;
+        //             }
+        //             room_id += 1;
+        //         });
+        //     });
+        // }
     </script>
 
 
