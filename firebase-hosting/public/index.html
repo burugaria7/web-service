@@ -4,7 +4,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-
     <script src="https://cdn.firebase.com/libs/firebaseui/3.5.2/firebaseui.js"></script>
     <link href="https://cdn.firebase.com/libs/firebaseui/3.5.2/firebaseui.css" rel="stylesheet" type="text/css">
     <script defer src="/__/firebase/init.js"></script>
@@ -16,6 +15,7 @@
 
     <div id="firebaseui-auth-container"></div>
     <div id="loader">Loading...</div>
+
     <!-- Insert these scripts at the bottom of the HTML, but before you use any Firebase services -->
 
     <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
@@ -47,15 +47,15 @@
 
         var uiConfig = {
             callbacks: {
-                signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+                signInSuccessWithAuthResult: function (authResult, redirectUrl) {
                     return true;
                 },
-                uiShown: function() {
+                uiShown: function () {
                     document.getElementById('loader').style.display = 'none';
                 }
             },
             signInFlow: 'popup',
-            signInSuccessUrl: './success.html',
+            signInSuccessUrl: './title.html',
             signInOptions: [
                 firebase.auth.GoogleAuthProvider.PROVIDER_ID,
                 firebase.auth.EmailAuthProvider.PROVIDER_ID,
