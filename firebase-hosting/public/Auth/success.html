@@ -24,15 +24,24 @@
         };
         firebase.initializeApp(config);
     </script>
+
     <script>
         firebase.auth().onAuthStateChanged((user) => {
             let h1 = document.querySelector('h1');
             let info = document.querySelector('#info');
 
+            // Initialize Cloud Firestore through Firebase
+            var db = firebase.firestore();
+
             if (user) {
                 h1.innerText = 'Login Complete!';
                 info.innerHTML = `${user.displayName}さんがログインしました`;
                 console.log(user);
+
+                //db.doc('users/' + user.uid).set({
+                //username: user.displayName
+                //    username: "てすと6"
+                //})
             } else {
                 h1.innerText = 'Not Login';
             }
