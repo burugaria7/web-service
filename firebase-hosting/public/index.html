@@ -4,21 +4,31 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <script src="https://cdn.firebase.com/libs/firebaseui/3.5.2/firebaseui.js"></script>
+    <link href="https://cdn.firebase.com/libs/firebaseui/3.5.2/firebaseui.css" rel="stylesheet" type="text/css">
+    <script defer src="/__/firebase/init.js"></script>
 </head>
 
 <body>
-    遊び大全 へようこそ！
-    <a href="auth/">auth</a>
-    <a href="minesweeper/">MineSweeper</a>
-    <a href="tictactoe/">Tictactoe</a><br>
+    auth へようこそ！
+    <a href="/">title</a>
 
-    <input type="text" id="input_name" value="">
-    <input type="button" onclick="DBset()" value="DB送信"><br>
-    <input type="text" id="input_nameid" value="">
-    <input type="button" onclick="DBadd()" value="DB取得">
+    <div id="firebaseui-auth-container"></div>
+    <div id="loader">Loading...</div>
+
+    <!-- Insert these scripts at the bottom of the HTML, but before you use any Firebase services -->
+
+    <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-app.js"></script>
+
+    <!-- If you enabled Analytics in your project, add the Firebase SDK for Analytics -->
+    <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-analytics.js"></script>
+
+    <!-- Add Firebase products that you want to use -->
+    <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-firestore.js"></script>
 
 
-    <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase.js"></script>
     <script>
         // TODO: Replace the following with your app's Firebase project configuration
         // For Firebase JavaScript SDK v7.20.0 and later, `measurementId` is an optional field
@@ -26,74 +36,33 @@
             apiKey: "AIzaSyBd0lVP2y9PXw8A0xQCc7C-t7UWgPdk7kY",
             authDomain: "recess-web.firebaseapp.com",
             databaseURL: "https://recess-web-default-rtdb.firebaseio.com/",
+            projectId: "recess-web",
             storageBucket: "gs://recess-web.appspot.com"
         };
         firebase.initializeApp(config);
     </script>
 
+    <script type="text/javascript">
+        var ui = new firebaseui.auth.AuthUI(firebase.auth());
 
-    <script>
-        var database = firebase.database();
-
-        let i = 1;
-        let id = 1;
-
-        // function DBset() {
-        //     var name = document.getElementById("input_name").value;
-        //     var commentsRef = firebase.database().ref('users/user' + i);
-        //     commentsRef.set({ "name": name });
-        //     i += 1;
-        // }
-
-        function DBset() {
-            var name = document.getElementById("input_name").value;
-            var commentsRef = firebase.database().ref('pro/' + i);
-            commentsRef.set({ "name": name });
-            i += 1;
-        }
-        //
-        // setInterval(checkDB, 1000);
-
-        // checkDB();
-
-        function checkDB() {
-            // var checkRef = firebase.database().ref('users');
-            var checkRef1 = firebase.database().ref('pro');
-            checkRef1.on('child_added', (snapshot1) => {
-                // console.log("hello" + id);
-                console.log(snapshot1.key);
-                console.log(snapshot1.val());
-
-
-                // var checkRef2 = firebase.database().ref('tictactoe/rooms/room1/move/player1/' + id);
-                // checkRef2.on('child_added', (snapshot2) => {
-                //     try{
-                //         console.log(snapshot2.val());
-                //         document.getElementById("output_message1").innerHTML = snapshot2.val().x;
-                //         document.getElementById("output_message2").innerHTML = snapshot2.val().y;
-                //     }
-                //     catch (e) {
-                //         console.log("e");
-                //     }
-                // });
-                // id += 1;
-            });
-        }
-
-        function DBadd() {
-            var nameid = document.getElementById("input_nameid").value;
-            var commentsRef = firebase.database().ref('users/user' + nameid);
-            commentsRef.once('value', (snapshot) => {
-                console.log(snapshot.val());
-                document.getElementById("output_message3").innerHTML = snapshot.val().name;
-            })
-        }
-
+        var uiConfig = {
+            callbacks: {
+                signInSuccessWithAuthResult: function (authResult, redirectUrl) {
+                    return true;
+                },
+                uiShown: function () {
+                    document.getElementById('loader').style.display = 'none';
+                }
+            },
+            signInFlow: 'popup',
+            signInSuccessUrl: './title.html',
+            signInOptions: [
+                firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+                firebase.auth.EmailAuthProvider.PROVIDER_ID,
+            ],
+        };
+        ui.start('#firebaseui-auth-container', uiConfig);
     </script>
-
-    <div id="output_message1"></div>
-    <div id="output_message2"></div>
-    <div id="output_message3"></div>
 
 
 </body>
