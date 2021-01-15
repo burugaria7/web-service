@@ -2,8 +2,15 @@
 <html>
 
 <body>
-    <h1>...Please wait</h1>
-    <div id="info"></div>
+    <a href="index.html">auth</a>
+    <a href="games/tictactoe.html">Tictactoe</a>
+    <a href="games/minesweeper.html">Minesweeper</a><br>
+    <input type="button" onclick="matching()" value="マッチング"><br>
+    <div id="name_1"></div>
+    <div id="name_2"></div>
+
+<!--    <h1>...Please wait</h1>-->
+<!--    <div id="info"></div>-->
 
     <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-app.js"></script>
     <!-- If you enabled Analytics in your project, add the Firebase SDK for Analytics -->
@@ -25,31 +32,128 @@
         firebase.initializeApp(config);
     </script>
 
+<!--    <script>-->
+<!--        firebase.auth().onAuthStateChanged((user) => {-->
+<!--            let h1 = document.querySelector('h1');-->
+<!--            let info = document.querySelector('#info');-->
+
+<!--            if (user) {-->
+<!--                h1.innerText = 'Login Complete!';-->
+<!--                info.innerHTML = `${user.displayName}さんがログインしました`;-->
+<!--            } else {-->
+<!--                h1.innerText = 'Not Login';-->
+<!--            }-->
+<!--        });-->
+<!--    </script>-->
+
     <script>
-        firebase.auth().onAuthStateChanged((user) => {
-            let h1 = document.querySelector('h1');
-            let info = document.querySelector('#info');
+        var db = firebase.firestore();
 
-            // Initialize Cloud Firestore through Firebase
-            var db = firebase.firestore();
+        var user;
+        let room_id = null;
+        let find = null;
 
-            if (user) {
-                h1.innerText = 'Login Complete!';
-                info.innerHTML = `${user.displayName}さんがログインしました`;
-                console.log(user);
+        const rankref = db.collection("rooms")
+            .doc("tictactoe").collection("rank");
 
-                //db.doc('users/' + user.uid).set({
-                //username: user.displayName
-                //    username: "てすと6"
-                //})
-            } else {
-                h1.innerText = 'Not Login';
-            }
+        firebase.auth().onAuthStateChanged((userinfo) => {
+          if (userinfo) {
+            user = userinfo;
+            console.log("login");
+          } else {
+              console.log("not login");
+          }
         });
+
+        async function matching() {
+            find = false;
+            try{
+                console.log("matching");
+                await check_room();
+                if (find){
+                    await enter_room();
+                    await fight();
+                }
+                else{
+                    create_room();
+                }
+            }catch (e) {
+                console.log("match e");
+            }
+        }
+
+        function create_room() {
+            console.log("create");
+            rankref.add({ now_people : 1})
+                .then(function(docRef) {
+                    rankref.doc(docRef.id).
+                    set({ player_1 : user.displayName }, { merge: true });
+                });
+        }
+
+        async function enter_room() {
+            console.log("enter");
+            var roomref = rankref.doc(room_id)
+            // let now = await get_nowpeople();
+            // console.log("now");
+            // console.log(now);
+            await roomref.update({
+               now_people : 2
+            })
+            .then(function() {
+                roomref.set({ player_2 : user.displayName }, { merge: true });
+            })
+        }
+
+        async function get_nowpeople() {
+            await rankref.doc(room_id)
+            .get().then(function(querySnapshot) {
+                var childData = querySnapshot.data().now_people;
+                // console.log("value");
+                // console.log(childData);
+                // return childData;
+            });
+        }
+
+        async function check_room() {
+            console.log("check");
+            try{
+                await rankref.where("now_people", "==", 1)
+                .get().then(function(querySnapshot) {
+                    // console.log("test1");
+                    for(let i = 0 ; i < querySnapshot.size ; i++) {
+                        var childKey = querySnapshot.docs[i].id;
+                        var childData = querySnapshot.docs[i].data().now_people;
+                        // console.log(childKey);
+                        // console.log(childData);
+                        if (childData === 1){
+                            // console.log("in");
+                            room_id = childKey;
+                            find = true;
+                            return;
+                        }
+                    }
+                });
+            }catch (e) {
+                console.log("error");
+            }
+        }
+
+        async function fight() {
+            console.log("fight");
+            var player1;
+            var player2;
+            await rankref.doc(room_id)
+            .get().then(function(querySnapshot) {
+                player1 = querySnapshot.data().player_1;
+                player2 = querySnapshot.data().player_2;
+                });
+            document.getElementById("name_1").innerHTML = player1;
+            document.getElementById("name_2").innerHTML = player2;
+        }
     </script>
 
 </body>
-
 
 
 </html>
