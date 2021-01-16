@@ -82,7 +82,7 @@
             find = false;
             document.getElementById("button1").disabled = true;
             document.getElementById("button2").disabled = false;
-            try{
+            // try{
                 console.log("matching");
                 await check_room();
                 if (find){
@@ -90,21 +90,35 @@
                     await fight();
                 }
                 else{
-                    create_room();
+                    await create_room();
+                    // enter_detector();
                 }
-            }catch (e) {
-                console.log("matching error");
-            }
+            // }
+            // catch (e) {
+            //     console.log("matching error");
+            // }
         }
 
-        function create_room() {
+        async function create_room() {
             console.log("create");
-            rankref.add({ now_people : 1})
-                .then(function(docRef) {
-                    room_id = docRef.id
-                    rankref.doc(room_id).
-                    set({ player_1 : user.displayName }, { merge: true });
+            let doc = await rankref.add({ now_people : 1, player_1 : user.displayName});
+            room_id = doc.id;
+        }
+
+        function enter_detector(){
+            var roomref = rankref.doc(String(room_id));
+            console.log("enter_detector");
+            roomref.onSnapshot(function(snapshot) {
+                console.log(snapshot);
+                snapshot.docChanges().forEach(function(change) {
+                    // 追加時
+                    if (change.type === 'added') {
+                        console.log("add");
+                        console.log(doc);
+                    }
                 });
+            // unsubscribe();
+            });
         }
 
         async function enter_room() {
