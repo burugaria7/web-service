@@ -91,7 +91,7 @@
                 }
                 else{
                     await create_room();
-                    // enter_detector();
+                    enter_detector();
                 }
             // }
             // catch (e) {
@@ -103,20 +103,22 @@
             console.log("create");
             let doc = await rankref.add({ now_people : 1, player_1 : user.displayName});
             room_id = doc.id;
+            console.log(room_id);
         }
 
         function enter_detector(){
             var roomref = rankref.doc(String(room_id));
             console.log("enter_detector");
             roomref.onSnapshot(function(snapshot) {
-                console.log(snapshot);
-                snapshot.docChanges().forEach(function(change) {
-                    // 追加時
-                    if (change.type === 'added') {
-                        console.log("add");
-                        console.log(doc);
-                    }
-                });
+                console.log(snapshot.data());
+                // console.log(snapshot);
+                // snapshot.docChanges().forEach(function(change) {
+                //     // 追加時
+                //     if (change.type === 'added') {
+                //         console.log("add");
+                //         console.log(doc);
+                //     }
+                // });
             // unsubscribe();
             });
         }
@@ -127,12 +129,10 @@
             let now = await get_nowpeople();
             console.log("now");
             console.log(now);
-            await roomref.update({
-               now_people : now + 1
-            })
-            .then(function() {
-                roomref.set({ "player_2" : user.displayName }, { merge: true });
-            })
+            await roomref.set({
+                now_people : now + 1,
+                "player_2" : user.displayName
+            }, { merge: true });
         }
 
         async function get_nowpeople() {
