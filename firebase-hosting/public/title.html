@@ -106,11 +106,21 @@
             console.log(room_id);
         }
 
-        function enter_detector(){
+        async function enter_detector(){
             var roomref = rankref.doc(String(room_id));
             console.log("enter_detector");
-            roomref.onSnapshot(function(snapshot) {
-                console.log(snapshot.data());
+            let f = false;
+            let unsubscribe = roomref.onSnapshot(function(snapshot) {
+                if (f){
+                    fight()
+                    console.log("fin");
+                    unsubscribe();
+                }
+                else{
+                    console.log(snapshot.data());
+                    f = true;
+                }
+
                 // console.log(snapshot);
                 // snapshot.docChanges().forEach(function(change) {
                 //     // 追加時
@@ -119,7 +129,7 @@
                 //         console.log(doc);
                 //     }
                 // });
-            // unsubscribe();
+            unsubscribe();
             });
         }
 
