@@ -5,7 +5,8 @@
     <a href="index.html">auth</a>
     <a href="games/tictactoe.html">Tictactoe</a>
     <a href="games/minesweeper.html">Minesweeper</a><br>
-    <input type="button" onclick="matching()" value="マッチング"><br>
+    <input type="button" id="button1" onclick="matching()" value="マッチング"><br>
+    <input type="button" id="button2" onclick="cansel()" value="キャンセル" disabled><br>
     <div id="name_1"></div>
     <div id="name_2"></div>
 
@@ -52,21 +53,35 @@
         var user;
         let room_id = null;
         let find = null;
-
-        const rankref = db.collection("rooms")
-            .doc("tictactoe").collection("rank");
+        const gameref = db.collection("rooms").doc("tictactoe");
+        const rankref = gameref.collection("rank");
 
         firebase.auth().onAuthStateChanged((userinfo) => {
           if (userinfo) {
             user = userinfo;
             console.log("login");
+            console.log(user.displayName);
           } else {
               console.log("not login");
           }
         });
 
+        function cansel(){
+            console.log("cansel");
+            room_id = null;
+            if (document.getElementById("button1").disabled){
+                document.getElementById("button1").disabled = false;
+                document.getElementById("button2").disabled = true;
+            }
+            else{
+                document.getElementById("button2").disabled = false;
+            }
+        }
+
         async function matching() {
             find = false;
+            document.getElementById("button1").disabled = true;
+            document.getElementById("button2").disabled = false;
             try{
                 console.log("matching");
                 await check_room();
@@ -78,7 +93,7 @@
                     create_room();
                 }
             }catch (e) {
-                console.log("match e");
+                console.log("matching error");
             }
         }
 
@@ -86,7 +101,8 @@
             console.log("create");
             rankref.add({ now_people : 1})
                 .then(function(docRef) {
-                    rankref.doc(docRef.id).
+                    room_id = docRef.id
+                    rankref.doc(room_id).
                     set({ player_1 : user.displayName }, { merge: true });
                 });
         }
@@ -94,25 +110,23 @@
         async function enter_room() {
             console.log("enter");
             var roomref = rankref.doc(room_id)
-            // let now = await get_nowpeople();
-            // console.log("now");
-            // console.log(now);
+            let now = await get_nowpeople();
+            console.log("now");
+            console.log(now);
             await roomref.update({
-               now_people : 2
+               now_people : now + 1
             })
             .then(function() {
-                roomref.set({ player_2 : user.displayName }, { merge: true });
+                roomref.set({ "player_2" : user.displayName }, { merge: true });
             })
         }
 
         async function get_nowpeople() {
-            await rankref.doc(room_id)
-            .get().then(function(querySnapshot) {
-                var childData = querySnapshot.data().now_people;
-                // console.log("value");
-                // console.log(childData);
-                // return childData;
-            });
+            let querySnapshot = await rankref.doc(room_id).get();
+            var now = querySnapshot.data().now_people;
+            console.log("value");
+            console.log(now);
+            return now;
         }
 
         async function check_room() {
