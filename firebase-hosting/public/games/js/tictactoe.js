@@ -137,7 +137,6 @@ function runMainLoop() {
  * メインループ
  */
 
-checkDB();
 
 function mainLoop() {
     let mainLoopTimer = setTimeout(mainLoop, INTERVAL);
@@ -510,6 +509,25 @@ function drawBackTitle(contex, y = 5, x = 5, w = 60, h = 40) {
     context.fillText("back", x + 30, y + 20);
 }
 
+// async function enter_detector(){
+//     var roomref = rankref.doc(String(room_id));
+//     console.log("enter_detector");
+//     let f = false;
+//     let unsubscribe = await roomref.onSnapshot(function(snapshot) {
+//         if (f){
+//             console.log(snapshot.data());
+//             fight();
+//         }
+//         else{
+//             f = true;
+//         }
+//     });
+//     if (f){
+//         unsubscribe();
+//         console.log("fin");
+//     }
+// }
+
 function firebaseset(x, y) {
     console.log("set " + turn);
     var commentsRef = firebase.database().ref('tictactoe/rooms/room1/move/player1/' + (turn - 1));
@@ -532,47 +550,7 @@ function checkDB() {
     });
 }
 
-// function firebaseon() {
-//     let enemy_move = [-1, -1];
-//     console.log(turn);
-//     var Ref = firebase.database().ref('tictactoe/rooms/room1/move/player1');
-//     var xRef = firebase.database().ref('tictactoe/rooms/room1/move/player1/' + (turn - 1));
-//     var yRef = firebase.database().ref('tictactoe/rooms/room1/move/player1/');
-//     // Ref.once('child_added',snapshot => {
-//     //     console.log(snapshot.val());
-//     //     console.log("ok");
-//     // })
-//     // yRef.on('child_added',snapshot => {
-//     //     console.log(snapshot);
-//     //     console.log("y");
-//     // })
-//     if (!(enemy_moved)){
-//
-//         Ref.on('child_added', (snapshot) => {
-//
-//             snapshot.forEach((childSnapshot) => {
-//                 console.log("on" + turn);
-//                 var childKey = childSnapshot.key;
-//                 var childData = childSnapshot.val();
-//                 console.log(childKey);
-//                 console.log(childData);
-//                 if (childKey === "x"){
-//                     enemy_move[0] = childData;
-//                 }
-//                 else if (childKey === "y"){
-//                     enemy_move[1] = childData;
-//                     enemy_moved = true;
-//                 }
-//                 console.log(enemy_move);
-//                 console.log("okk");
-//                 console.log(enemy_moved);
-//             });
-//
-//         });
-//
-//     }
-//     return enemy_move
-// }
+
 
 
 
