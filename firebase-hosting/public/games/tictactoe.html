@@ -25,6 +25,22 @@
             storageBucket: "gs://recess-web.appspot.com"
         };
         firebase.initializeApp(config);
+
+        const db = firebase.firestore();
+        let user, room_id, enemy_name, my_num, player;
+        const gameref = db.collection("rooms").doc("tictactoe");
+        const rankref = gameref.collection("rank");
+        let roomref;
+
+        firebase.auth().onAuthStateChanged((userinfo) => {
+          if (userinfo) {
+            user = userinfo;
+            console.log("login");
+            console.log(user.displayName);
+          } else {
+              console.log("not login");
+          }
+        });
     </script>
 
 

@@ -6,7 +6,7 @@
 <!--    <a href="games/tictactoe.html">Tictactoe</a>-->
     <a href="games/minesweeper.html">Minesweeper</a><br>
     <input type="button" id="button1" onclick="matching()" value="マッチング">
-    <input type="button" id="button3" onclick="startgame()" value="PVP Tictactoe" disabled><br>
+    <input type="button" id="button3" onclick="startgame()" value="PVP Tictactoe"><br>
     <input type="button" id="button2" onclick="cansel()" value="キャンセル" disabled><br>
     <div id="name_1"></div>
     <div id="name_2"></div>
@@ -81,8 +81,9 @@
             }
         }
 
-        function startgame(){
-            window.location.href = "games/tictactoe.html?" + room_id;
+        async function startgame(){
+            // await matching();
+            window.location.href = "games/tictactoe.html?" + "roomid="+ room_id;
         }
 
         async function matching() {
@@ -107,7 +108,7 @@
 
         async function create_room() {
             console.log("create");
-            let doc = await rankref.add({ now_people : 1, player_1 : user.displayName});
+            let doc = await rankref.add({ "now_people" : 1, "player_1" : user.displayName});
             room_id = doc.id;
             console.log(room_id);
         }
@@ -138,8 +139,8 @@
             console.log("now");
             console.log(now);
             await roomref.set({
-                now_people : now + 1,
-                "player_2" : user.displayName
+                "now_people" : now + 1,
+                "player_2" : user.displayName,
             }, { merge: true });
         }
 
@@ -185,6 +186,7 @@
             document.getElementById("name_2").innerHTML = player2;
             phase = 1;
             document.getElementById("button3").disabled = false;
+            window.location.href = "games/tictactoe.html?" + "roomid="+ room_id;
         }
     </script>
 

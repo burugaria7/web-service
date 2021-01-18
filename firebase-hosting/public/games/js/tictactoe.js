@@ -71,7 +71,6 @@ let isTitleGuide = true;        // タイトルガイド点滅用フラグ {true
 let lastTitleTime = -1;         // タイトルガイド表示切替用
 let lastCountDownTime = -1;     // カウントダウン表示用
 let lastPutTime = -1;           // 配置用
-let lastReducedTime = -1;       // 残り時間更新用
 let lastTimeUpTime = -1;        // タイムアップ表示用
 
 // ゲームデータ
@@ -93,10 +92,9 @@ for (let y = 0; y < cells.length; y++) {
     }
 }
 
-let player = null;
+let turn = null;
 let winner = null;
 let backtitle = new Path2D();
-let turn = null;
 let enemy_moved = null;
 let enemy_move = null;
 
@@ -109,7 +107,7 @@ let enemy_move = null;
 /**
  * 全体の初期化処理
  */
-function init() {
+async function init() {
     // キャンバス要素の取得
     canvas = document.getElementById("a_canvas");
     // 描画用コンテキストの取得
@@ -121,7 +119,13 @@ function init() {
 
     // ゲームデータのリセット
     resetData();
+
+    get_para();
+    roomref = rankref.doc(room_id);
+    await get_data();
+    await enter_detector();
 }
+
 /**
  * メインループの開始
  */
@@ -138,6 +142,7 @@ function runMainLoop() {
  */
 
 
+
 function mainLoop() {
     let mainLoopTimer = setTimeout(mainLoop, INTERVAL);
     let now = -1;
@@ -146,10 +151,12 @@ function mainLoop() {
     case 0:
         // タイトルフェーズ
         now = Date.now();
-        if (now - lastTitleTime >= 500) {
+        if (now - lastTitleTime >= 3000) {
             // 0.5秒に1回のタイミングでタイトルガイドを点滅させる。
-            lastTitleTime = Date.now();
-            isTitleGuide = !isTitleGuide;
+            lastCountDownTime = Date.now();
+            resetData();
+            // カウントダウンフェーズに移行する。
+	        phase = 1;
         }
         drawTitle();
         drawBackTitle(backtitle);
@@ -164,21 +171,15 @@ function mainLoop() {
                 // カウントダウンが終了したらタッチフェーズに移行する。
                 phase = 2;
                 lastPutTime = Date.now();
-                lastReducedTime = Date.now();
             }
         }
-        drawBackground();
+        drawTitle();
+        drawBackTitle(backtitle);
         drawCount();
         break;
     case 2:                 // 以下を追加
         // タッチフェーズ
         now = Date.now();
-        // let move = firebaseon();
-        if (enemy_moved){
-            console.log("move " + enemy_move);
-            put(enemy_move[0], enemy_move[1]);
-            enemy_moved = false;
-        }
         drawBackground();
         drawMap();
         drawTurn();
@@ -186,34 +187,32 @@ function mainLoop() {
     case 3:     // 以下を追加
         // ゲームオーバーフェーズ
         now = Date.now();
-        if (now - lastTimeUpTime >= 3000) {
+        if (now - lastTimeUpTime >= 5000) {
             // タイムアップ表示後3秒後にタイトルフェーズに移行する。
             phase = 0;
+            lastTitleTime = Date.now();
+
+            if (my_num === 1){
+                roomref.delete().then(function() {
+                    console.log("Document successfully deleted!");
+                }).catch(function(error) {
+                    console.error("Error removing document: ", error);
+                });
+            }
+            window.location.href = "../../title.html";
+        }
+        let str;
+        if (winner === my_num){
+            str = "You Win!";
+        }
+        else if (winner === 0){
+            str = "Draw";
+        }
+        else{
+            str = "You Lose!";
         }
         drawBackground();
-        drawResult("引き分け")
-        drawMap();
-        break;
-    case 4:     // 以下を追加
-        // ゲームオーバーフェーズ
-        now = Date.now();
-        if (now - lastTimeUpTime >= 3000) {
-            // タイムアップ表示後3秒後にタイトルフェーズに移行する。
-            phase = 0;
-        }
-        drawBackground();
-        drawResult("〇の勝ち")
-        drawMap();
-        break;
-    case 5:     // 以下を追加
-        // ゲームオーバーフェーズ
-        now = Date.now();
-        if (now - lastTimeUpTime >= 3000) {
-            // タイムアップ表示後3秒後にタイトルフェーズに移行する。
-            phase = 0;
-        }
-        drawBackground();
-        drawResult("☓の勝ち")
+        drawResult(str)
         drawMap();
         break;
     }
@@ -275,17 +274,14 @@ function put(x, y){
     if (check_winner(x, y)){
         lastTimeUpTime = Date.now();
         winner = player;
-        phase = player === 1 ? 4:5;
+        phase = 3;
         return;
     }
     if (check_finish()){
         lastTimeUpTime = Date.now();
         winner = 0;
         phase = 3;
-        return;
     }
-    player *= -1;
-    turn += 1;
 }
 
 function check_finish(){
@@ -373,13 +369,9 @@ function onCanvasLClick(e) {
  * @return true: 正解, false: ミス
  */
 function isTouched(x, y) {
-    if (map[y][x] === 0){
+    if (map[y][x] === 0 && player === my_num){
         put(x, y);
-        firebaseset(x, y);
-        // enemy_moved = true;
-        // firebaseon();
-        firebaseset2(x - 1, y - 1);
-        console.log("hi");
+        writeDB(x, y);
     }
 }
 
@@ -433,17 +425,23 @@ function drawTitle() {
     context.shadowBlur = null;
     context.fillText("Tictactoe", 320, 100);
 
-    if (isTitleGuide === false) return;
-
     context.fillStyle = "white";
-    context.font = "32px arial";
+    context.font = "45px arial";
     context.textAlign = "center";
     context.textBaseline = "middle";
-    context.shadowColor = null;
-    context.shadowOffsetX = null;
-    context.shadowOffsetY = null;
-    context.shadowBlur = null;
-    context.fillText("Click anywhere to start.", 320, 280);
+    context.fillText("vs　" + enemy_name, 320, 250);
+    //
+    // if (isTitleGuide === false) return;
+    //
+    // context.fillStyle = "white";
+    // context.font = "32px arial";
+    // context.textAlign = "center";
+    // context.textBaseline = "middle";
+    // context.shadowColor = null;
+    // context.shadowOffsetX = null;
+    // context.shadowOffsetY = null;
+    // context.shadowBlur = null;
+    // context.fillText("Click anywhere to start.", 320, 300);
 }
 /**
  * スコアの描画
@@ -469,7 +467,7 @@ function drawTurn() {
     context.shadowOffsetX = null;
     context.shadowOffsetY = null;
     context.shadowBlur = null;
-    let str = player === 1 ? "〇" : "☓";
+    let str = player === my_num ? "自分" : "相手";
     context.fillText(String(str) + "のターンです", 320, 80);
 }
 
@@ -497,6 +495,7 @@ function drawCount() {
     context.shadowBlur = 20;
     context.fillText(strCount, canvas.width / 2, STAGE_TOP - 70, STAGE_WIDTH);
 }
+
 function drawBackTitle(contex, y = 5, x = 5, w = 60, h = 40) {
     contex.rect(x, y, w, h);
     context.strokeStyle = "white";
@@ -509,45 +508,48 @@ function drawBackTitle(contex, y = 5, x = 5, w = 60, h = 40) {
     context.fillText("back", x + 30, y + 20);
 }
 
-// async function enter_detector(){
-//     var roomref = rankref.doc(String(room_id));
-//     console.log("enter_detector");
-//     let f = false;
-//     let unsubscribe = await roomref.onSnapshot(function(snapshot) {
-//         if (f){
-//             console.log(snapshot.data());
-//             fight();
-//         }
-//         else{
-//             f = true;
-//         }
-//     });
-//     if (f){
-//         unsubscribe();
-//         console.log("fin");
-//     }
-// }
-
-function firebaseset(x, y) {
-    console.log("set " + turn);
-    var commentsRef = firebase.database().ref('tictactoe/rooms/room1/move/player1/' + (turn - 1));
-    commentsRef.set({ "x" : x, "y" : y });
-}
-
-function firebaseset2(x, y) {
-    console.log("set " + turn);
-    var commentsRef = firebase.database().ref('tictactoe/rooms/room1/move/player2/' + (turn));
-    commentsRef.set({ "x" : x, "y" : y });
-}
-
-function checkDB() {
-    var checkRef1 = firebase.database().ref('tictactoe/rooms/room1/move/player2');
-    checkRef1.on('child_added', (snapshot1) => {
-        console.log(snapshot1.key);
-        console.log(snapshot1.val());
-        enemy_move = [snapshot1.val().x, snapshot1.val().y];
-        enemy_moved = true;
+async function enter_detector(){
+    console.log("enter_detector");
+    let unsubscribe = await roomref.collection("mapdata").onSnapshot(function(querySnapshot) {
+        // querySnapshot.forEach(function(doc) {
+        for (let i = turn - 1; i < querySnapshot.size; i++){
+            if (player !== my_num){
+                console.log(querySnapshot.docs[i].data());
+                put(querySnapshot.docs[i].data().x, querySnapshot.docs[i].data().y)
+            }
+            else{
+                console.log("enemy turn");
+            }
+        }
+        player *= -1;
+        turn += 1;
     });
+}
+
+function writeDB(x, y) {
+    console.log("set " + turn);
+    roomref.collection("mapdata").doc(String(turn - 1))
+        .set({"x" : x, "y" : y});
+}
+
+function get_para(){
+    let query = location.search;
+    let value = query.split('=');
+    room_id = value[1];
+}
+
+async function get_data() {
+    let querySnapshot = await rankref.doc(room_id).get();
+    player = 1;
+    if (user.displayName === querySnapshot.data().player_1){
+        my_num = 1;
+        enemy_name = querySnapshot.data().player_2
+    }
+    else{
+        my_num = -1;
+        enemy_name = querySnapshot.data().player_1
+    }
+    console.log("mynum " + my_num);
 }
 
 
