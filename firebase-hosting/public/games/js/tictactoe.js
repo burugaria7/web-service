@@ -159,7 +159,7 @@ function mainLoop() {
 	        phase = 1;
         }
         drawTitle();
-        drawBackTitle(backtitle);
+        // drawBackTitle(backtitle);
         break;
     case 1:             // 以下を追加
         // カウントダウンフェーズ
@@ -174,7 +174,6 @@ function mainLoop() {
             }
         }
         drawTitle();
-        drawBackTitle(backtitle);
         drawCount();
         break;
     case 2:                 // 以下を追加

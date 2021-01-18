@@ -6,7 +6,7 @@
 <!--    <a href="games/tictactoe.html">Tictactoe</a>-->
     <a href="games/minesweeper.html">Minesweeper</a><br>
     <input type="button" id="button1" onclick="matching()" value="マッチング">
-    <input type="button" id="button3" onclick="startgame()" value="PVP Tictactoe"><br>
+    <input type="button" id="button3" onclick="startgame()" value="PVP Tictactoe" disabled><br>
     <input type="button" id="button2" onclick="cansel()" value="キャンセル" disabled><br>
     <div id="name_1"></div>
     <div id="name_2"></div>
@@ -52,9 +52,10 @@
         var db = firebase.firestore();
 
         var user;
-        let room_id = null;
-        let find = null;
-        let phase = null;
+        let room_id;
+        let find;
+        let phase;
+        let unsubscribe;
         const gameref = db.collection("rooms").doc("tictactoe");
         const rankref = gameref.collection("rank");
 
@@ -70,11 +71,17 @@
 
         function cansel(){
             console.log("cansel");
-            room_id = null;
-            phase = null;
+            console.log(room_id);
+            unsubscribe();
+            var roomref = rankref.doc(String(room_id));
             if (document.getElementById("button1").disabled){
                 document.getElementById("button1").disabled = false;
                 document.getElementById("button2").disabled = true;
+                roomref.delete().catch(function(error) {
+                    console.error("Error removing document: ", error);
+                });
+                room_id = null;
+                phase = null;
             }
             else{
                 document.getElementById("button2").disabled = false;
@@ -97,6 +104,7 @@
                 if (find){
                     await enter_room();
                     await fight();
+                    document.getElementById("button2").disabled = true;
                 }
                 else{
                     await create_room();
@@ -117,7 +125,7 @@
             var roomref = rankref.doc(String(room_id));
             console.log("enter_detector");
             let f = false;
-            let unsubscribe = await roomref.onSnapshot(function(snapshot) {
+            unsubscribe = await roomref.onSnapshot(function(snapshot) {
                 if (f){
                     console.log(snapshot.data());
                     fight();
