@@ -1,0 +1,112 @@
+@charset "utf-8";
+body {
+    margin: 0;
+}
+.custom {
+    font-size: 65px;
+    font-family: "Source Sans Pro";
+    color: rgb(254, 254, 254);
+    line-height: 1.2;
+    position: absolute;
+    left: 630.016px;
+    top: -30px;
+    z-index: 7;
+  }
+  
+.rank {
+    font-size: 65px;
+    font-family: "Source Sans Pro";
+    color: rgb(254, 254, 254);
+    line-height: 1.2;
+    position: absolute;
+    left: 1124.672px;
+    top: -30px;
+    z-index: 7;
+  }
+  
+.name {
+    font-size: 50px;
+    font-family: "Kozuka Gothic Pr6N";
+    color: rgb(104, 104, 104);
+    line-height: 1.2;
+    position: absolute;
+    left: 1678.198px;
+    top: -45px;
+    z-index: 7;
+  }
+  
+  .casual {
+    font-size: 65px;
+    font-family: "Source Sans Pro";
+    color: rgb(254, 254, 254);
+    line-height: 1.2;
+    position: absolute;
+    left: 870px;
+    top: -30px;
+    z-index: 7;
+  }
+   
+#casual {
+    background-image: -moz-linear-gradient( 90deg, rgb(182,220,255) 0%, rgb(185,182,229) 100%);
+    background-image: -webkit-linear-gradient( 90deg, rgb(182,220,255) 0%, rgb(185,182,229) 100%);
+    background-image: -ms-linear-gradient( 90deg, rgb(182,220,255) 0%, rgb(185,182,229) 100%);
+    box-shadow: 0px 5px 0px 0px rgba(1, 121, 255, 0.5);
+    position: absolute;
+    border-radius: 15px;
+    left: 844px;
+    top: -218px;
+    width: 231px;
+    height: 376px;
+    z-index: 6;
+  }
+  
+#rank {
+    background-image: -moz-linear-gradient( 90deg, rgb(208,146,146) 0%, rgb(200,34,112) 100%);
+    background-image: -webkit-linear-gradient( 90deg, rgb(208,146,146) 0%, rgb(200,34,112) 100%);
+    background-image: -ms-linear-gradient( 90deg, rgb(208,146,146) 0%, rgb(200,34,112) 100%);
+    box-shadow: 0px 5px 0px 0px rgba(255, 0, 0, 0.51);
+    position: absolute;
+    border-radius: 15px;
+    left: 1074px;
+    top: -218px;
+    width: 230px;
+    height: 376px;
+    z-index: 6;
+  }
+  
+#custom {
+    background-image: -moz-linear-gradient( 90deg, rgb(193,253,201) 0%, rgb(144,249,196) 50%, rgb(87,245,161) 100%);
+    background-image: -webkit-linear-gradient( 90deg, rgb(193,253,201) 0%, rgb(144,249,196) 50%, rgb(87,245,161) 100%);
+    background-image: -ms-linear-gradient( 90deg, rgb(193,253,201) 0%, rgb(144,249,196) 50%, rgb(87,245,161) 100%);
+    box-shadow: 0px 5px 0px 0px rgba(7, 255, 100, 0.5);
+    position: absolute;
+    border-radius: 15px;
+    left: 615px;
+    top: -218px;
+    width: 230px;
+    height: 376px;
+    z-index: 6;
+  }
+  
+#head {
+    background-color: rgb(244, 244, 244);
+    opacity: 0.20;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 65px;
+    z-index: 3;
+  }
+#background {
+    background-image: url("background.png");
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+  }
+ 
+  
+  
