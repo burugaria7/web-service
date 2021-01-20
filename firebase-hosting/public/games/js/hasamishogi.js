@@ -67,6 +67,7 @@ let lastTimeUpTime = -1;        // タイムアップ表示用
 
 // ゲームデータ
 let map = null;                 // マップデータ
+let hairetu = null;
 let count = -1;                 // カウントダウン用の残りカウント
 let remainingTime = -1;         // 残り時間
 let score = 0;                  // スコア
@@ -94,6 +95,9 @@ let original = null;
 let onlyone = false;
 let turn = null;
 let player = null;
+let my_piece_n = null;
+let enemy_piece_n = null;
+let winner = null;
 
 /**
  * **** **** **** **** **** **** **** ****
@@ -161,36 +165,25 @@ function mainLoop() {
         }
         drawBackground();
         drawCount();
-        drawRemainingTime();
         break;
     case 2:                 // 以下を追加
         // タッチフェーズ
         now = Date.now();
-        if (now - lastReducedTime >= 1000) {
-            // 1秒ごとに残り時間を減らす。
-            lastReducedTime = Date.now();
-            if (--remainingTime <= 0) {
-                // 残り時間がなくなったらゲームオーバーフェーズに移行する。
-                lastTimeUpTime = Date.now();
-                phase = 3;
-            }
-        }
         drawBackground();
         drawMap();
         drawScore();
-        drawRemainingTime();
+        drawHighScore();
         break;
     case 3:     // 以下を追加
         // ゲームオーバーフェーズ
         now = Date.now();
-        if (now - lastTimeUpTime >= 3000) {
+        if (now - lastTimeUpTime >= 5000) {
             // タイムアップ表示後3秒後にタイトルフェーズに移行する。
             phase = 0;
         }
         drawBackground();
         drawMap();
-        drawRemainingTime();
-        drawTimeUp();
+        drawResult();
         break;
     }
 }
@@ -227,12 +220,15 @@ function windowToCanvas(wx, wy) {
 function resetData() {
     resetMap();
     count = 3;
-    remainingTime = 60;
+    remainingTime = 180;
     score = 0;
     original = [-1, -1];
     turn = 1;
     player = 1;
     onlyone = false;
+    my_piece_n = 9;
+    enemy_piece_n = 9;
+    winner = -1;
 }
 /**
  * マップデータのリセット
@@ -290,6 +286,19 @@ function move(x, y, f = true) {
     }
 }
 
+function check_finish() {
+    if (my_piece_n <= 4){
+        winner = player;
+        lastTimeUpTime = Date.now();
+        phase = 3;
+    }
+    else if (enemy_piece_n <= 4){
+        winner = player;
+        lastTimeUpTime = Date.now();
+        phase = 3;
+    }
+}
+
 function connected(x, y){
     console.log("connected");
     let index_i = 1;
@@ -299,29 +308,34 @@ function connected(x, y){
     for (let s = 0; s < 2; s ++){
         for (let t = 0; t < 2; t ++) {
             let connect = 0;
+            let info = [];
+            console.log(index_j, index_i);
             while (y + index_i < map.length && y + index_i >= 0 &&
             x + index_j < map.length && x + index_j >= 0) {
-                if (map[y + index_i][x + index_j] === 0) {
-                    break;
-                } else if (map[y + index_i][x + index_j] === player && connect > 0) {
+                if (map[y + index_i][x + index_j] === player && connect > 0) {
                     eliminate1(x, y, value_j, value_i);
+                    connect = 0;
                     break;
-                } else {
+                } else if (map[y + index_i][x + index_j] === player * -1){
+                    info.push([x + index_j, y + index_i])
                     connect += 1;
                     index_i += value_i;
                     index_j += value_j;
-                    console.log(connect);
-                    console.log(index_i);
-                    console.log(index_j);
                 }
+                else{
+                    connect = 0;
+                    break;
+                }
+            }
+            if (connect > 0){
+                eliminate2(info[0][0], info[0][1], value_j, value_i);
             }
             console.log("1/4");
             value_i *= -1;
             value_j *= -1;
-            index_i *= -1;
-            index_j *= -1;
+            index_i = value_i;
+            index_j =value_j;
         }
-        console.log("1/2");
         index_i = 0;
         index_j = 1;
         value_i = 0;
@@ -330,7 +344,7 @@ function connected(x, y){
 }
 
 function eliminate1(x, y, index_j, index_i){
-    console.log("eliminated");
+    console.log("eliminated1");
     let i = index_i;
     let j = index_j;
     while (y + i < map.length && y + i >= 0 &&
@@ -345,6 +359,83 @@ function eliminate1(x, y, index_j, index_i){
         }
     }
 }
+
+function eliminate2(x, y, j, i) {
+    console.log(x, y);
+    hairetu = new Array(9);       // セル
+    for (let i = 0; i < hairetu.length; i++) {
+        hairetu[i] = new Array(9);
+        for (let j = 0; j < hairetu[0].length; j++) {
+            hairetu[i][j] = 0;
+        }
+    }
+    if (saiki1(x, y)){
+        console.log("y");
+        saiki2(x, y);
+    }
+    else{
+        console.log("n");
+    }
+}
+
+function saiki1(x, y) {
+    if (y >= map.length || y < 0 ||
+    x >= map.length || x < 0){
+        console.log("soto");
+        return true;
+    }
+    if (hairetu[y][x] !== 0){
+        console.log("2kaime");
+        return true;
+    }
+    hairetu[y][x] = 1;
+    if(map[y][x] === 0){
+        console.log("kuuhaku");
+        return false;
+    }
+    else if (map[y][x] === player){
+        console.log("aite");
+        return true;
+    }
+    else{
+        console.log("tonari");
+        if (saiki1(x + 1, y) && saiki1(x, y - 1) && saiki1(x - 1, y) && saiki1(x, y + 1)){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+}
+
+function saiki2(x, y) {
+    if (y >= map.length || y < 0 ||
+    x >= map.length || x < 0){
+        console.log("soto");
+        return;
+    }
+    else if(map[y][x] === 0){
+        console.log("kuuhaku");
+        return;
+    }
+    else if (map[y][x] === player){
+        console.log("aite");
+        return;
+    }
+    map[y][x] = 0;
+    if (player === 1){
+        enemy_piece_n -= 1;
+    }
+    else{
+        my_piece_n -= 1;
+    }
+    saiki2(x + 1, y);
+    saiki2(x, y - 1);
+    saiki2(x - 1, y);
+    saiki2(x, y + 1);
+}
+
+
 /**
  * キャンバスへのマウスクリック
  */
@@ -393,6 +484,7 @@ function isTouched(x, y) {
         map[original[1]][original[0]] = 0;
         onlyone = false;
         connected(x, y);
+        check_finish();
         turn += 1;
         player *= -1
     }
@@ -520,7 +612,8 @@ function drawHighScore() {
     context.shadowOffsetX = null;
     context.shadowOffsetY = null;
     context.shadowBlur = null;
-    context.fillText("HIGH SCORE", 432, 16);
+    context.fillText("my piece", 432, 16);
+    context.fillText("enemy piece", 432, 40);
 
     context.fillStyle = "white";
     context.font = "16px arial";
@@ -530,7 +623,30 @@ function drawHighScore() {
     context.shadowOffsetX = null;
     context.shadowOffsetY = null;
     context.shadowBlur = null;
-    context.fillText(String(highScore), 624, 32);
+    context.fillText(String(my_piece_n), 624, 16);
+    context.fillText(String(enemy_piece_n), 624, 40);
+}
+
+function drawResult() {
+    let str;
+    if (winner === 1){
+            str = "You Win!";
+        }
+        else if (winner === 0){
+            str = "Draw";
+        }
+        else{
+            str = "You Lose!";
+        }
+    context.fillStyle = "white";
+    context.font = "40px arial";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.shadowColor = null;
+    context.shadowOffsetX = null;
+    context.shadowOffsetY = null;
+    context.shadowBlur = null;
+    context.fillText(str, 320, 80);
 }
 /**
  * 背景の描画
