@@ -29,7 +29,7 @@
         const db = firebase.firestore();
         let user, room_id, enemy_name, my_num, player;
         const gameref = db.collection("rooms").doc("tictactoe");
-        const rankref = gameref.collection("rank");
+        const casualref = gameref.collection("casual");
         let roomref;
 
         firebase.auth().onAuthStateChanged((userinfo) => {

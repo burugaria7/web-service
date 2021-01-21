@@ -5,10 +5,11 @@
     <a href="index.html">auth</a>
 <!--    <a href="games/tictactoe.html">Tictactoe</a>-->
     <a href="games/minesweeper.html">Minesweeper</a>
-    <a href="games/hasamishogi.html">HasamiShogi</a><br>
-    <input type="button" id="button1" onclick="matching()" value="マッチング">
-    <input type="button" id="button3" onclick="startgame()" value="PVP Tictactoe" disabled><br>
-    <input type="button" id="button2" onclick="cansel()" value="キャンセル" disabled><br>
+<!--    <a href="games/hasamishogi.html">HasamiShogi</a>-->
+    <br>
+    <input type="button" id="button1" onclick="matching('tictactoe', this.id)" value="PVP Tictactoe">
+    <input type="button" id="button3" onclick="matching('hasamishogi', this.id)" value="PVP HasamiShogi"><br>
+    <input type="button" id="cansel" onclick="cansel()" value="キャンセル" disabled><br>
     <div id="name_1"></div>
     <div id="name_2"></div>
 
@@ -57,8 +58,8 @@
         let find;
         let phase;
         let unsubscribe;
-        const gameref = db.collection("rooms").doc("tictactoe");
-        const rankref = gameref.collection("rank");
+        let game_id, button_id;
+        let gameref, casualref;
 
         firebase.auth().onAuthStateChanged((userinfo) => {
           if (userinfo) {
@@ -70,14 +71,15 @@
           }
         });
 
+
         function cansel(){
             console.log("cansel");
             console.log(room_id);
             unsubscribe();
-            var roomref = rankref.doc(String(room_id));
-            if (document.getElementById("button1").disabled){
-                document.getElementById("button1").disabled = false;
-                document.getElementById("button2").disabled = true;
+            var roomref = casualref.doc(String(room_id));
+            if (document.getElementById(button_id).disabled){
+                document.getElementById(button_id).disabled = false;
+                document.getElementById("cansel").disabled = true;
                 roomref.delete().catch(function(error) {
                     console.error("Error removing document: ", error);
                 });
@@ -85,27 +87,26 @@
                 phase = null;
             }
             else{
-                document.getElementById("button2").disabled = false;
+                document.getElementById("cansel").disabled = false;
             }
         }
 
-        async function startgame(){
-            // await matching();
-            window.location.href = "games/tictactoe.html?" + "roomid="+ room_id;
-        }
-
-        async function matching() {
+        async function matching(gameid, buttonid) {
+            game_id =gameid;
+            button_id = buttonid;
+            gameref = db.collection("rooms").doc(game_id);
+            casualref = gameref.collection("casual");
             find = false;
             phase = 0;
-            document.getElementById("button1").disabled = true;
-            document.getElementById("button2").disabled = false;
+            document.getElementById(button_id).disabled = true;
+            document.getElementById("cansel").disabled = false;
             if (phase === 0){
                 console.log("matching");
                 await check_room();
                 if (find){
                     await enter_room();
                     await fight();
-                    document.getElementById("button2").disabled = true;
+                    document.getElementById("cansel").disabled = true;
                 }
                 else{
                     await create_room();
@@ -117,18 +118,19 @@
 
         async function create_room() {
             console.log("create");
-            let doc = await rankref.add({ "now_people" : 1, "player_1" : user.displayName});
+            let doc = await casualref.add({ "now_people" : 1, "player_1" : user.displayName});
             room_id = doc.id;
             console.log(room_id);
         }
 
         async function enter_detector(){
-            var roomref = rankref.doc(String(room_id));
+            var roomref = casualref.doc(String(room_id));
             console.log("enter_detector");
             let f = false;
             unsubscribe = await roomref.onSnapshot(function(snapshot) {
                 if (f){
                     console.log(snapshot.data());
+                    unsubscribe();
                     fight();
                 }
                 else{
@@ -143,7 +145,7 @@
 
         async function enter_room() {
             console.log("enter");
-            var roomref = rankref.doc(room_id)
+            var roomref = casualref.doc(room_id)
             let now = await get_nowpeople();
             console.log("now");
             console.log(now);
@@ -154,14 +156,14 @@
         }
 
         async function get_nowpeople() {
-            let querySnapshot = await rankref.doc(room_id).get();
+            let querySnapshot = await casualref.doc(room_id).get();
             return querySnapshot.data().now_people;
         }
 
         async function check_room() {
             console.log("check");
             try{
-                await rankref.where("now_people", "==", 1)
+                await casualref.where("now_people", "==", 1)
                 .get().then(function(querySnapshot) {
                     // console.log("test1");
                     for(let i = 0 ; i < querySnapshot.size ; i++) {
@@ -184,19 +186,13 @@
 
         async function fight() {
             console.log("fight");
-            var player1;
-            var player2;
-            await rankref.doc(room_id)
+            await casualref.doc(room_id)
             .get().then(function(querySnapshot) {
-                player1 = querySnapshot.data().player_1;
-                player2 = querySnapshot.data().player_2;
+                document.getElementById("name_1").innerHTML = querySnapshot.data().player_1;
+                document.getElementById("name_2").innerHTML = querySnapshot.data().player_2;
             });
-            document.getElementById("name_1").innerHTML = player1;
-            document.getElementById("name_2").innerHTML = player2;
             phase = 1;
-            document.getElementById("button3").disabled = false;
-            window.location.href = "games/tictactoe.html?" + "roomid="+ room_id;
-            unsubscribe();
+            window.location.href = "games/" + game_id + ".html?" + "roomid="+ room_id;
         }
     </script>
 

@@ -121,7 +121,7 @@ async function init() {
     resetData();
 
     get_para();
-    roomref = rankref.doc(room_id);
+    roomref = casualref.doc(room_id);
     await get_data();
     await enter_detector();
 }
@@ -188,7 +188,6 @@ function mainLoop() {
         now = Date.now();
         if (now - lastTimeUpTime >= 5000) {
             // タイムアップ表示後3秒後にタイトルフェーズに移行する。
-            phase = 0;
             lastTitleTime = Date.now();
 
             if (my_num === 1){
@@ -199,19 +198,10 @@ function mainLoop() {
                 });
             }
             window.location.href = "../../title.html";
-        }
-        let str;
-        if (winner === my_num){
-            str = "You Win!";
-        }
-        else if (winner === 0){
-            str = "Draw";
-        }
-        else{
-            str = "You Lose!";
+            phase = 0;
         }
         drawBackground();
-        drawResult(str)
+        drawResult()
         drawMap();
         break;
     }
@@ -331,18 +321,18 @@ function connected(x, y, step_x, step_y){
 function onCanvasLClick(e) {
     let loc = windowToCanvas(e.clientX, e.clientY);
     switch (phase) {
-    case 0:
-        if (context.isPointInPath(backtitle, loc.x, loc.y)) {
-            window.location.href = document.referrer;
-            break;
-        }
-	    // タイトルフェーズで画面がクリックされた
-        lastCountDownTime = Date.now();
-	    resetData();
-	    // カウントダウンフェーズに移行する。
-
-	    phase = 1;
-	    break;
+    // case 0:
+    //     if (context.isPointInPath(backtitle, loc.x, loc.y)) {
+    //         window.location.href = document.referrer;
+    //         break;
+    //     }
+	//     // タイトルフェーズで画面がクリックされた
+    //     lastCountDownTime = Date.now();
+	//     resetData();
+	//     // カウントダウンフェーズに移行する。
+    //
+	//     phase = 1;
+	//     break;
     case 2:     // 以下を追加
         // if (context.isPointInPath(item1, loc.x, loc.y) && item1_n > 0) {
         //     break;
@@ -445,7 +435,17 @@ function drawTitle() {
 /**
  * スコアの描画
  */
-function drawResult(str) {
+function drawResult() {
+    let str;
+    if (winner === my_num){
+        str = "You Win!";
+    }
+    else if (winner === 0){
+        str = "Draw";
+    }
+    else{
+        str = "You Lose!";
+    }
     context.fillStyle = "white";
     context.font = "40px arial";
     context.textAlign = "center";
@@ -523,11 +523,15 @@ async function enter_detector(){
         player *= -1;
         turn += 1;
     });
+    if (phase === 3){
+        unsubscribe();
+    }
 }
 
 function writeDB(x, y) {
-    console.log("set " + turn);
-    roomref.collection("mapdata").doc(String(turn - 1))
+     const subject_num= new Number(turn - 1).toString();
+    console.log("set " + subject_num);
+    roomref.collection("mapdata").doc(subject_num)
         .set({"x" : x, "y" : y});
 }
 
@@ -538,7 +542,7 @@ function get_para(){
 }
 
 async function get_data() {
-    let querySnapshot = await rankref.doc(room_id).get();
+    let querySnapshot = await casualref.doc(room_id).get();
     player = 1;
     if (user.displayName === querySnapshot.data().player_1){
         my_num = 1;

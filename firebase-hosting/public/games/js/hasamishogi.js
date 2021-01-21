@@ -3,7 +3,7 @@
  * 定数
  * **** **** **** **** **** **** **** ****
  */
-INTERVAL = 16;          // 30FPS（1フレームを32ms間隔で処理）
+INTERVAL = 32;          // 30FPS（1フレームを32ms間隔で処理）
 
 CELL_SIZE = 48;        // セルサイズ
 
@@ -94,7 +94,6 @@ for (let y = 0; y < data.length; y++) {
 let original = null;
 let onlyone = false;
 let turn = null;
-let player = null;
 let my_piece_n = null;
 let enemy_piece_n = null;
 let winner = null;
@@ -107,7 +106,7 @@ let winner = null;
 /**
  * 全体の初期化処理
  */
-function init() {
+async function init() {
     // キャンバス要素の取得
     canvas = document.getElementById("a_canvas");
     // 描画用コンテキストの取得
@@ -118,8 +117,11 @@ function init() {
     drawTitle();
 
     // ゲームデータのリセット
-    resetData();
 
+    get_para();
+    roomref = casualref.doc(room_id);
+    await get_data();
+    await enter_detector();
 }
 /**
  * メインループの開始
@@ -143,10 +145,11 @@ function mainLoop() {
     case 0:
         // タイトルフェーズ
         now = Date.now();
-        if (now - lastTitleTime >= 500) {
+        if (now - lastTitleTime >= 3000) {
             // 0.5秒に1回のタイミングでタイトルガイドを点滅させる。
-            lastTitleTime = Date.now();
-            isTitleGuide = !isTitleGuide;
+            lastCountDownTime = Date.now();
+            resetData();
+            phase = 1;
         }
         drawTitle();
         break;
@@ -160,10 +163,9 @@ function mainLoop() {
                 // カウントダウンが終了したらタッチフェーズに移行する。
                 phase = 2;
                 lastPutTime = Date.now();
-                lastReducedTime = Date.now();
             }
         }
-        drawBackground();
+        drawTitle();
         drawCount();
         break;
     case 2:                 // 以下を追加
@@ -171,14 +173,23 @@ function mainLoop() {
         now = Date.now();
         drawBackground();
         drawMap();
-        drawScore();
-        drawHighScore();
+        drawTurn();
+        drawPieceNum();
         break;
     case 3:     // 以下を追加
         // ゲームオーバーフェーズ
         now = Date.now();
         if (now - lastTimeUpTime >= 5000) {
-            // タイムアップ表示後3秒後にタイトルフェーズに移行する。
+            lastTitleTime = Date.now();
+
+            if (my_num === 1){
+                roomref.delete().then(function() {
+                    console.log("Document successfully deleted!");
+                }).catch(function(error) {
+                    console.error("Error removing document: ", error);
+                });
+            }
+            window.location.href = "../../title.html";
             phase = 0;
         }
         drawBackground();
@@ -220,15 +231,13 @@ function windowToCanvas(wx, wy) {
 function resetData() {
     resetMap();
     count = 3;
-    remainingTime = 180;
-    score = 0;
     original = [-1, -1];
     turn = 1;
     player = 1;
     onlyone = false;
     my_piece_n = 9;
     enemy_piece_n = 9;
-    winner = -1;
+    winner = null;
 }
 /**
  * マップデータのリセット
@@ -239,10 +248,10 @@ function resetMap() {
         map[y] = new Array(9);
         for (let x = 0; x < map[0].length; x++) {
             if (y === 0){
-                map[y][x] = -1;
+                map[y][x] = my_num * -1;
             }
             else if (y === 8){
-                map[y][x] = 1;
+                map[y][x] = my_num;
             }
             else{
                 map[y][x] = 0;
@@ -259,7 +268,14 @@ function resetMap() {
 /**
  * ランダムにターゲットを配置する。
  */
-function move(x, y, f = true) {
+
+function move(xx, yy, x, y) {
+    map[y][x] = player;
+    map[yy][xx] = 0;
+    connected(x, y);
+    check_finish();
+}
+function predict(x, y, f = true) {
     let num1, num2;
     let index = 1;
     let value = 1;
@@ -309,7 +325,7 @@ function connected(x, y){
         for (let t = 0; t < 2; t ++) {
             let connect = 0;
             let info = [];
-            console.log(index_j, index_i);
+            // console.log(index_j, index_i);
             while (y + index_i < map.length && y + index_i >= 0 &&
             x + index_j < map.length && x + index_j >= 0) {
                 if (map[y + index_i][x + index_j] === player && connect > 0) {
@@ -330,7 +346,6 @@ function connected(x, y){
             if (connect > 0){
                 eliminate2(info[0][0], info[0][1], value_j, value_i);
             }
-            console.log("1/4");
             value_i *= -1;
             value_j *= -1;
             index_i = value_i;
@@ -361,7 +376,7 @@ function eliminate1(x, y, index_j, index_i){
 }
 
 function eliminate2(x, y, j, i) {
-    console.log(x, y);
+    // console.log(x, y);
     hairetu = new Array(9);       // セル
     for (let i = 0; i < hairetu.length; i++) {
         hairetu[i] = new Array(9);
@@ -370,35 +385,35 @@ function eliminate2(x, y, j, i) {
         }
     }
     if (saiki1(x, y)){
-        console.log("y");
+        // console.log("y");
         saiki2(x, y);
     }
     else{
-        console.log("n");
+        // console.log("n");
     }
 }
 
 function saiki1(x, y) {
     if (y >= map.length || y < 0 ||
     x >= map.length || x < 0){
-        console.log("soto");
+        // console.log("soto");
         return true;
     }
     if (hairetu[y][x] !== 0){
-        console.log("2kaime");
+        // console.log("2kaime");
         return true;
     }
     hairetu[y][x] = 1;
     if(map[y][x] === 0){
-        console.log("kuuhaku");
+        // console.log("kuuhaku");
         return false;
     }
     else if (map[y][x] === player){
-        console.log("aite");
+        // console.log("aite");
         return true;
     }
     else{
-        console.log("tonari");
+        // console.log("tonari");
         if (saiki1(x + 1, y) && saiki1(x, y - 1) && saiki1(x - 1, y) && saiki1(x, y + 1)){
             return true;
         }
@@ -411,19 +426,19 @@ function saiki1(x, y) {
 function saiki2(x, y) {
     if (y >= map.length || y < 0 ||
     x >= map.length || x < 0){
-        console.log("soto");
+        // console.log("soto");
         return;
     }
     else if(map[y][x] === 0){
-        console.log("kuuhaku");
+        // console.log("kuuhaku");
         return;
     }
     else if (map[y][x] === player){
-        console.log("aite");
+        // console.log("aite");
         return;
     }
     map[y][x] = 0;
-    if (player === 1){
+    if (player === my_num){
         enemy_piece_n -= 1;
     }
     else{
@@ -468,25 +483,23 @@ function onCanvasClick(e) {
  * @return true: 正解, false: ミス
  */
 function isTouched(x, y) {
-    if (map[y][x] === player && !onlyone) {
-        move(x, y)
-        map[y][x] = 2;
-        original = [x, y];
-        onlyone = true;
-    } else if (map[y][x] === 2 && onlyone) {
-        move(x, y, false);
-        map[y][x] = player;
-        original = [-1, -1];
-        onlyone = false;
-    }else if (map[y][x] === 3) {
-        move(original[0], original[1], false);
-        map[y][x] = player;
-        map[original[1]][original[0]] = 0;
-        onlyone = false;
-        connected(x, y);
-        check_finish();
-        turn += 1;
-        player *= -1
+    if (player === my_num){
+        if (map[y][x] === player && !onlyone) {
+            predict(x, y)
+            map[y][x] = 2;
+            original = [x, y];
+            onlyone = true;
+        } else if (map[y][x] === 2 && onlyone) {
+            predict(x, y, false);
+            map[y][x] = player;
+            original = [-1, -1];
+            onlyone = false;
+        }else if (map[y][x] === 3) {
+            predict(original[0], original[1], false);
+            onlyone = false;
+            move(original[0], original[1], x, y);
+            writeDB(original[0], original[1], x, y);
+        }
     }
 }
 
@@ -552,7 +565,7 @@ function drawMap() {
  * タイトル画面の描画
  */
 function drawTitle() {
-    context.fillStyle = 'black';
+    context.fillStyle = '#222222';
     context.fillRect(0, 0, 640, 640);
     context.fillStyle = "white";
     context.font = "50px arial";
@@ -562,24 +575,18 @@ function drawTitle() {
     context.shadowOffsetX = null;
     context.shadowOffsetY = null;
     context.shadowBlur = null;
-    context.fillText("Minesweeper", 320, 100);
-
-    if (isTitleGuide == false) return;
+    context.fillText("Hasami Shogi", 320, 100);
 
     context.fillStyle = "white";
-    context.font = "32px arial";
+    context.font = "45px arial";
     context.textAlign = "center";
     context.textBaseline = "middle";
-    context.shadowColor = null;
-    context.shadowOffsetX = null;
-    context.shadowOffsetY = null;
-    context.shadowBlur = null;
-    context.fillText("Click anywhere to start.", 320, 240);
+    context.fillText("vs　" + enemy_name, 320, 250);
 }
 /**
  * スコアの描画
  */
-function drawScore() {
+function drawTurn() {
     context.fillStyle = "white";
     context.font = "16px arial";
     context.textAlign = "left";
@@ -603,7 +610,7 @@ function drawScore() {
 /**
  * ハイスコアの描画
  */
-function drawHighScore() {
+function drawPieceNum() {
     context.fillStyle = "white";
     context.font = "16px arial";
     context.textAlign = "left";
@@ -612,7 +619,7 @@ function drawHighScore() {
     context.shadowOffsetX = null;
     context.shadowOffsetY = null;
     context.shadowBlur = null;
-    context.fillText("my piece", 432, 16);
+    context.fillText("my piece", 432, 15);
     context.fillText("enemy piece", 432, 40);
 
     context.fillStyle = "white";
@@ -623,21 +630,21 @@ function drawHighScore() {
     context.shadowOffsetX = null;
     context.shadowOffsetY = null;
     context.shadowBlur = null;
-    context.fillText(String(my_piece_n), 624, 16);
+    context.fillText(String(my_piece_n), 624, 15);
     context.fillText(String(enemy_piece_n), 624, 40);
 }
 
 function drawResult() {
     let str;
-    if (winner === 1){
-            str = "You Win!";
-        }
-        else if (winner === 0){
-            str = "Draw";
-        }
-        else{
-            str = "You Lose!";
-        }
+    if (winner === my_num){
+        str = "You Win!";
+    }
+    else if (winner === 0){
+        str = "Draw";
+    }
+    else{
+        str = "You Lose!";
+    }
     context.fillStyle = "white";
     context.font = "40px arial";
     context.textAlign = "center";
@@ -707,5 +714,66 @@ function drawTimeUp() {
     context.shadowOffsetY = 5;
     context.shadowBlur = 20;
     context.fillText("TIME UP!", canvas.width / 2, STAGE_TOP, STAGE_WIDTH);
+}
+
+function writeDB(xx, yy, x, y) {
+    const subject_num= new Number(turn).toString();
+    console.log("set " + subject_num);
+    roomref.collection("mapdata").doc(subject_num)
+        .set({"xx" : xx, "yy" : yy, "x" : x, "y" : y});
+}
+
+async function enter_detector(){
+    console.log("enter_detector");
+    let xx, yy, x, y;
+    let unsubscribe = await roomref.collection("mapdata").onSnapshot(function(querySnapshot){
+        if (player === my_num) console.log("enemy turn");
+        else{
+            for (let i = 0; i < querySnapshot.size; i++){
+                // console.log(querySnapshot.docs[i].id);
+                // console.log(turn);
+                if (querySnapshot.docs[i].id == turn){
+                    if (player !== my_num){
+                        console.log(querySnapshot.docs[i].data());
+                        // console.log(querySnapshot.docs[i].id);
+                        xx = 8 - querySnapshot.docs[i].data().xx;
+                        yy = 8 - querySnapshot.docs[i].data().yy;
+                        x = 8 - querySnapshot.docs[i].data().x;
+                        y = 8 - querySnapshot.docs[i].data().y;
+                        move(xx, yy, x, y);
+                    }
+                    else{
+                        console.log("enemy turn");
+                    }
+                }
+            }
+        }
+        player *= -1;
+        turn += 1;
+    });
+    if (phase === 3){
+        console.log("on fin");
+        unsubscribe();
+    }
+}
+
+function get_para(){
+    let query = location.search;
+    let value = query.split('=');
+    room_id = value[1];
+}
+
+async function get_data() {
+    let querySnapshot = await casualref.doc(room_id).get();
+    player = 1;
+    if (user.displayName === querySnapshot.data().player_1){
+        my_num = 1;
+        enemy_name = querySnapshot.data().player_2
+    }
+    else{
+        my_num = -1;
+        enemy_name = querySnapshot.data().player_1
+    }
+    console.log("mynum " + my_num);
 }
 
