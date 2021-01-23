@@ -179,7 +179,7 @@
                     let player_definition_name = "player_" + new_people_sum;
                     transaction.update(casuDocRef, {
                         "now_people": new_people_sum,
-                        "player": user.displayName,
+                        "player_2": user.displayName,
                     });
                 });
             }).then(function () {
