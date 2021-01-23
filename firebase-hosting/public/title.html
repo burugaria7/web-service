@@ -103,7 +103,7 @@
             if (phase === 0) {
                 console.log("matching...");
                 await check_room();
-                if (find && (await enter_room())) {
+                if (find && (enter_room())) {
                     console.log("MATCH!!!!!!");
                     await skip_to_game();
                     document.getElementById("cansel").disabled = true;
