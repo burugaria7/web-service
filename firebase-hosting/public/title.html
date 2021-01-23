@@ -103,6 +103,7 @@
             if (phase === 0) {
                 console.log("matching...");
                 await check_room();
+                //enter_room()はawaitで呼ぶな絶対、ばぐるぞ
                 if (find && (enter_room())) {
                 }
                 else {
@@ -187,10 +188,9 @@
                 console.log("Transaction successfully committed!");
                 console.log("MATCH!!!!!!");
                 skip_to_game();
-                return true;
             }).catch(function (error) {
                 console.log("Transaction failed: ", error);
-                matching(game_id, button_id);
+                setTimeout(matching(game_id, button_id), Math.random() * 3000)
             });
         }
 
