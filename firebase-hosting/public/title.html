@@ -71,7 +71,6 @@
             }
         });
 
-
         function cansel() {
             console.log("cansel");
             console.log(room_id);
@@ -151,23 +150,9 @@
 
         async function enter_room() {
             console.log("enter");
-            // var roomref = casualref.doc(room_id)
-            // let now = await get_nowpeople();
-            // console.log("now");
-            // console.log(now);
-            // await roomref.set({
-            //     "now_people": now + 1,
-            //     "player_2": user.displayName,
-            // }, { merge: true });
-
-            // let querySnapshot = await casualref.doc(room_id).get();
-            // return querySnapshot.data().now_people;
 
             //ここからトランザクション開始
-
-            // Create a reference to the SF doc.
             var casuDocRef = casualref.doc(room_id);
-
             return db.runTransaction(function (transaction) {
                 // This code may get re-run multiple times if there are conflicts.
                 console.log("test");
@@ -175,7 +160,6 @@
                     if (!casuDoc.exists) {
                         throw "Document does not exist!";
                     }
-
                     // Add one person to the city population.
                     // Note: this could be done without a transaction
                     //       by updating the population using FieldValue.increment()
@@ -198,7 +182,9 @@
                 skip_to_game();
             }).catch(function (error) {
                 console.log("Transaction failed: ", error);
+                //同時にルーム作成を避けるためにランダムウェイトを入れる
                 sleep((Math.random() * 3000));
+                //再帰的にマッチング
                 matching(game_id, button_id);
             });
         }
