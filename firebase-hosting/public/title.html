@@ -104,9 +104,6 @@
                 console.log("matching...");
                 await check_room();
                 if (find && (enter_room())) {
-                    console.log("MATCH!!!!!!");
-                    await skip_to_game();
-                    document.getElementById("cansel").disabled = true;
                 }
                 else {
                     await create_room();
@@ -176,6 +173,10 @@
                     var new_people_sum = casuDoc.data().now_people + 1;
                     console.log("now");
                     console.log(new_people_sum);
+                    if (new_people_sum > 2) {
+                        console.log("FKFKFKFKF");
+                        throw "Document does not exist!";
+                    }
                     let player_definition_name = "player_" + new_people_sum;
                     transaction.update(casuDocRef, {
                         "now_people": new_people_sum,
@@ -184,6 +185,8 @@
                 });
             }).then(function () {
                 console.log("Transaction successfully committed!");
+                console.log("MATCH!!!!!!");
+                skip_to_game();
                 return true;
             }).catch(function (error) {
                 console.log("Transaction failed: ", error);
