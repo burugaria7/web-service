@@ -190,7 +190,7 @@
                 return true;
             }).catch(function (error) {
                 console.log("Transaction failed: ", error);
-                return false;
+                matching(gameid, buttonid);
             });
         }
 
