@@ -13,7 +13,7 @@
     <input type="button" id="button2" onclick="matching('connectfour', this.id)" value="PVP ConnectFour">
     <br>
     <input type="button" id="cansel" onclick="cansel()" value="キャンセル" disabled>
-    <input type="button" id="delete" onclick="" value="削除" disabled>
+    <input type="button" id="delete" onclick="room_delete()" value="削除" disabled>
     <br>
     <div id="name_1"></div>
     <div id="name_2"></div>
@@ -93,6 +93,10 @@
             else {
                 document.getElementById("cansel").disabled = false;
             }
+        }
+
+        function room_delete(){
+            db.collection("rooms").doc("connectfour");
         }
 
         async function matching(gameid, buttonid) {

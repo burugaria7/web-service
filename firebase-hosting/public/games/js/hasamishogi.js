@@ -369,6 +369,12 @@ function eliminate1(x, y, index_j, index_i){
         }
         else {
             map[y + i][x + j] = 0;
+            if (player === my_num){
+                enemy_piece_n -= 1;
+            }
+            else{
+                my_piece_n -= 1;
+            }
             i += index_i;
             j += index_j;
         }
