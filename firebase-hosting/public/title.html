@@ -3,18 +3,18 @@
 
 <body>
     <a href="index.html">auth</a>
-<!--    <a href="games/tictactoe.html">Tictactoe</a>-->
+    <!--    <a href="games/tictactoe.html">Tictactoe</a>-->
     <a href="games/minesweeper.html">Minesweeper</a>
-<!--    <a href="games/hasamishogi.html">HasamiShogi</a>-->
+    <!--    <a href="games/hasamishogi.html">HasamiShogi</a>-->
     <br>
     <input type="button" id="button1" onclick="matching('tictactoe', this.id)" value="PVP Tictactoe">
-    <input type="button" id="button2" onclick="matching('hasamishogi', this.id)" value="PVP HasamiShogi"><br>
+    <input type="button" id="button3" onclick="matching('hasamishogi', this.id)" value="PVP HasamiShogi"><br>
     <input type="button" id="cansel" onclick="cansel()" value="キャンセル" disabled><br>
     <div id="name_1"></div>
     <div id="name_2"></div>
 
-<!--    <h1>...Please wait</h1>-->
-<!--    <div id="info"></div>-->
+    <!--    <h1>...Please wait</h1>-->
+    <!--    <div id="info"></div>-->
 
     <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-app.js"></script>
     <!-- If you enabled Analytics in your project, add the Firebase SDK for Analytics -->
@@ -36,19 +36,19 @@
         firebase.initializeApp(config);
     </script>
 
-<!--    <script>-->
-<!--        firebase.auth().onAuthStateChanged((user) => {-->
-<!--            let h1 = document.querySelector('h1');-->
-<!--            let info = document.querySelector('#info');-->
+    <!--    <script>-->
+    <!--        firebase.auth().onAuthStateChanged((user) => {-->
+    <!--            let h1 = document.querySelector('h1');-->
+    <!--            let info = document.querySelector('#info');-->
 
-<!--            if (user) {-->
-<!--                h1.innerText = 'Login Complete!';-->
-<!--                info.innerHTML = `${user.displayName}さんがログインしました`;-->
-<!--            } else {-->
-<!--                h1.innerText = 'Not Login';-->
-<!--            }-->
-<!--        });-->
-<!--    </script>-->
+    <!--            if (user) {-->
+    <!--                h1.innerText = 'Login Complete!';-->
+    <!--                info.innerHTML = `${user.displayName}さんがログインしました`;-->
+    <!--            } else {-->
+    <!--                h1.innerText = 'Not Login';-->
+    <!--            }-->
+    <!--        });-->
+    <!--    </script>-->
 
     <script>
         var db = firebase.firestore();
@@ -62,37 +62,36 @@
         let gameref, casualref;
 
         firebase.auth().onAuthStateChanged((userinfo) => {
-          if (userinfo) {
-            user = userinfo;
-            console.log("login");
-            console.log(user.displayName);
-          } else {
-              console.log("not login");
-          }
+            if (userinfo) {
+                user = userinfo;
+                console.log("login");
+                console.log(user.displayName);
+            } else {
+                console.log("not login");
+            }
         });
 
-
-        function cansel(){
+        function cansel() {
             console.log("cansel");
             console.log(room_id);
             unsubscribe();
             var roomref = casualref.doc(String(room_id));
-            if (document.getElementById(button_id).disabled){
+            if (document.getElementById(button_id).disabled) {
                 document.getElementById(button_id).disabled = false;
                 document.getElementById("cansel").disabled = true;
-                roomref.delete().catch(function(error) {
+                roomref.delete().catch(function (error) {
                     console.error("Error removing document: ", error);
                 });
                 room_id = null;
                 phase = null;
             }
-            else{
+            else {
                 document.getElementById("cansel").disabled = false;
             }
         }
 
         async function matching(gameid, buttonid) {
-            game_id =gameid;
+            game_id = gameid;
             button_id = buttonid;
             gameref = db.collection("rooms").doc(game_id);
             casualref = gameref.collection("casual");
@@ -100,15 +99,13 @@
             phase = 0;
             document.getElementById(button_id).disabled = true;
             document.getElementById("cansel").disabled = false;
-            if (phase === 0){
-                console.log("matching");
+            if (phase === 0) {
+                console.log("matching...");
                 await check_room();
-                if (find){
-                    await enter_room();
-                    await fight();
-                    document.getElementById("cansel").disabled = true;
+                //enter_room()はawaitで呼ぶな絶対、ばぐるぞ
+                if (find && (enter_room())) {
                 }
-                else{
+                else {
                     await create_room();
                     await enter_detector();
                 }
@@ -118,41 +115,78 @@
 
         async function create_room() {
             console.log("create");
-            let doc = await casualref.add({ "now_people" : 1, "player_1" : user.displayName});
+            let doc = await casualref.add({ "now_people": 1, "player_1": user.displayName });
             room_id = doc.id;
             console.log(room_id);
         }
 
-        async function enter_detector(){
+        async function enter_detector() {
             var roomref = casualref.doc(String(room_id));
             console.log("enter_detector");
             let f = false;
-            unsubscribe = await roomref.onSnapshot(function(snapshot) {
-                if (f){
+            unsubscribe = await roomref.onSnapshot(function (snapshot) {
+                if (f) {
                     console.log(snapshot.data());
                     unsubscribe();
-                    fight();
+                    skip_to_game();
                 }
-                else{
+                else {
                     f = true;
                 }
             });
-            if (f){
+            if (f) {
                 unsubscribe();
                 console.log("fin");
             }
         }
 
+        // ビジーwaitを使う方法
+        function sleep(waitMsec) {
+            var startMsec = new Date();
+
+            // 指定ミリ秒間だけループさせる（CPUは常にビジー状態）
+            while (new Date() - startMsec < waitMsec);
+        }
+
         async function enter_room() {
             console.log("enter");
-            var roomref = casualref.doc(room_id)
-            let now = await get_nowpeople();
-            console.log("now");
-            console.log(now);
-            await roomref.set({
-                "now_people" : now + 1,
-                "player_2" : user.displayName,
-            }, { merge: true });
+
+            //ここからトランザクション開始
+            var casuDocRef = casualref.doc(room_id);
+            return db.runTransaction(function (transaction) {
+                // This code may get re-run multiple times if there are conflicts.
+                console.log("test");
+                return transaction.get(casuDocRef).then(function (casuDoc) {
+                    if (!casuDoc.exists) {
+                        throw "Document does not exist!";
+                    }
+                    // Add one person to the city population.
+                    // Note: this could be done without a transaction
+                    //       by updating the population using FieldValue.increment()
+                    var new_people_sum = casuDoc.data().now_people + 1;
+                    console.log("now");
+                    console.log(new_people_sum);
+                    if (new_people_sum > 2) {
+                        console.log("FKFKFKFKF");
+                        throw "Document does not exist!";
+                    }
+                    let player_definition_name = "player_" + new_people_sum;
+                    transaction.update(casuDocRef, {
+                        "now_people": new_people_sum,
+                        "player_2": user.displayName,
+                    });
+                });
+            }).then(function () {
+                console.log("Transaction successfully committed!");
+                console.log("MATCH!!!!!!");
+                skip_to_game();
+            }).catch(function (error) {
+                console.log("Transaction failed: ", error);
+                //同時にルーム作成を避けるためにランダムウェイトを入れる
+                sleep((Math.random() * 3000));
+                //再帰的にマッチング
+                matching(game_id, button_id);
+            });
         }
 
         async function get_nowpeople() {
@@ -162,37 +196,37 @@
 
         async function check_room() {
             console.log("check");
-            try{
+            try {
                 await casualref.where("now_people", "==", 1)
-                .get().then(function(querySnapshot) {
-                    // console.log("test1");
-                    for(let i = 0 ; i < querySnapshot.size ; i++) {
-                        var childKey = querySnapshot.docs[i].id;
-                        var childData = querySnapshot.docs[i].data().now_people;
-                        // console.log(childKey);
-                        // console.log(childData);
-                        if (childData === 1){
-                            // console.log("in");
-                            room_id = childKey;
-                            find = true;
-                            return;
+                    .get().then(function (querySnapshot) {
+                        // console.log("test1");
+                        for (let i = 0; i < querySnapshot.size; i++) {
+                            var childKey = querySnapshot.docs[i].id;
+                            var childData = querySnapshot.docs[i].data().now_people;
+                            // console.log(childKey);
+                            // console.log(childData);
+                            if (childData === 1) {
+                                // console.log("in");
+                                room_id = childKey;
+                                find = true;
+                                return;
+                            }
                         }
-                    }
-                });
-            }catch (e) {
+                    });
+            } catch (e) {
                 console.log("error");
             }
         }
 
-        async function fight() {
+        async function skip_to_game() {
             console.log("fight");
             await casualref.doc(room_id)
-            .get().then(function(querySnapshot) {
-                document.getElementById("name_1").innerHTML = querySnapshot.data().player_1;
-                document.getElementById("name_2").innerHTML = querySnapshot.data().player_2;
-            });
+                .get().then(function (querySnapshot) {
+                    document.getElementById("name_1").innerHTML = querySnapshot.data().player_1;
+                    document.getElementById("name_2").innerHTML = querySnapshot.data().player_2;
+                });
             phase = 1;
-            window.location.href = "games/" + game_id + ".html?" + "roomid="+ room_id;
+            window.location.href = "games/" + game_id + ".html?" + "roomid=" + room_id;
         }
     </script>
 
