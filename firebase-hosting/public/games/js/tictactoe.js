@@ -321,25 +321,7 @@ function connected(x, y, step_x, step_y){
 function onCanvasLClick(e) {
     let loc = windowToCanvas(e.clientX, e.clientY);
     switch (phase) {
-    // case 0:
-    //     if (context.isPointInPath(backtitle, loc.x, loc.y)) {
-    //         window.location.href = document.referrer;
-    //         break;
-    //     }
-	//     // タイトルフェーズで画面がクリックされた
-    //     lastCountDownTime = Date.now();
-	//     resetData();
-	//     // カウントダウンフェーズに移行する。
-    //
-	//     phase = 1;
-	//     break;
     case 2:     // 以下を追加
-        // if (context.isPointInPath(item1, loc.x, loc.y) && item1_n > 0) {
-        //     break;
-        // }
-        // if (context.isPointInPath(item2, loc.x, loc.y) && item2_n > 0) {
-        //     break;
-        // }
         // タッチフェーズでセルがクリックされた
         for (let y = 0; y < cells.length; y++) {
             for (let x = 0; x < cells[0].length; x++) {

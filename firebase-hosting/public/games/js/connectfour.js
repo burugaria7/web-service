@@ -5,7 +5,7 @@
  */
 INTERVAL = 32;          // 30FPS（1フレームを32ms間隔で処理）
 
-CELL_SIZE = 48;        // セルサイズ
+CELL_SIZE = 64;        // セルサイズ
 
 // ステージの位置
 STAGE_LEFT = 104;
@@ -67,15 +67,14 @@ let lastTimeUpTime = -1;        // タイムアップ表示用
 
 // ゲームデータ
 let map = null;                 // マップデータ
-let hairetu = null;
 let count = -1;                 // カウントダウン用の残りカウント
 let remainingTime = -1;         // 残り時間
 let score = 0;                  // スコア
 let highScore = 0;              // ハイスコア
 
-let cells = new Array(9);       // セル
+let cells = new Array(6);       // セル
 for (let y = 0; y < cells.length; y++) {
-    cells[y] = new Array(9);
+    cells[y] = new Array(7);
 }
 for (let y = 0; y < cells.length; y++) {
     for (let x = 0; x < cells[y].length; x++) {
@@ -83,20 +82,9 @@ for (let y = 0; y < cells.length; y++) {
     }
 }
 
-let data = new Array(9);       // セル
-for (let y = 0; y < data.length; y++) {
-    data[y] = new Array(9);
-    for (let x = 0; x < data[y].length; x++) {
-        data[y][x] = 0;
-    }
-}
-
-let original = null;
-let onlyone = false;
 let turn = null;
-let my_piece_n = null;
-let enemy_piece_n = null;
 let winner = null;
+let placed = null;
 
 /**
  * **** **** **** **** **** **** **** ****
@@ -174,7 +162,6 @@ function mainLoop() {
         drawBackground();
         drawMap();
         drawTurn();
-        drawPieceNum();
         break;
     case 3:     // 以下を追加
         // ゲームオーバーフェーズ
@@ -229,225 +216,95 @@ function windowToCanvas(wx, wy) {
  * ゲームデータのリセット
  */
 function resetData() {
-    resetMap();
     count = 3;
-    original = [-1, -1];
     turn = 1;
     player = 1;
-    onlyone = false;
-    my_piece_n = 9;
-    enemy_piece_n = 9;
     winner = null;
+    placed = [5, 5, 5, 5, 5, 5, 5];
+    resetMap();
 }
 /**
  * マップデータのリセット
  */
 function resetMap() {
-    map = new Array(9);       // セル
+    map = new Array(6);       // セル
     for (let y = 0; y < map.length; y++) {
-        map[y] = new Array(9);
+        map[y] = new Array(7);
         for (let x = 0; x < map[0].length; x++) {
-            if (y === 0){
-                map[y][x] = my_num * -1;
-            }
-            else if (y === 8){
-                map[y][x] = my_num;
-            }
-            else{
+            if (placed[x] === y){
+                map[y][x] = 2;
+            }else {
                 map[y][x] = 0;
             }
         }
     }
-
-    for (let y = 0; y < data.length; y++) {
-        for (let x = 0; x < data[0].length; x++) {
-            data[y][x] = 0;
-        }
-    }
 }
 /**
- * ランダムにターゲットを配置する。
+ * **** **** **** **** **** **** **** ****
+ * イベント関連
+ * **** **** **** **** **** **** **** ****
  */
-
-function move(xx, yy, x, y) {
+function put(x, y){
     map[y][x] = player;
-    map[yy][xx] = 0;
-    connected(x, y);
-    check_finish();
-}
-function predict(x, y, f = true) {
-    let num1, num2;
-    let index = 1;
-    let value = 1;
-    if (f){
-        num1 = 3;
-        num2 = 0;
+    placed[x] -= 1;
+    if (placed[x] >= 0){
+        map[placed[x]][x] = 2;
     }
-    else{
-        num1 = 0;
-        num2 = 3;
-    }
-    for (let _ = 0; _ < 2; _ ++){
-        while (y + index < map.length && y + index >= 0 && map[y + index][x] === num2){
-            map[y + index][x] = num1;
-            index += value;
-        }
-        index = value;
-        while (x + index < map.length && x + index >= 0 && map[y][x + index] === num2){
-            map[y][x + index] = num1;
-            index += value;
-        }
-        value *= -1;
-        index = -1;
-    }
-}
-
-function check_finish() {
-    if (my_piece_n <= 4){
-        winner = player;
+    if (check_winner(x, y)){
         lastTimeUpTime = Date.now();
+        winner = player;
         phase = 3;
+        return;
     }
-    else if (enemy_piece_n <= 4){
-        winner = player;
+    if (check_finish()){
         lastTimeUpTime = Date.now();
+        winner = 0;
         phase = 3;
     }
 }
 
-function connected(x, y){
-    console.log("connected");
-    let index_i = 1;
-    let index_j = 0;
-    let value_i = 1;
-    let value_j = 0;
-    for (let s = 0; s < 2; s ++){
-        for (let t = 0; t < 2; t ++) {
-            let connect = 0;
-            let info = [];
-            // console.log(index_j, index_i);
-            while (y + index_i < map.length && y + index_i >= 0 &&
-            x + index_j < map.length && x + index_j >= 0) {
-                if (map[y + index_i][x + index_j] === player && connect > 0) {
-                    eliminate1(x, y, value_j, value_i);
-                    connect = 0;
-                    break;
-                } else if (map[y + index_i][x + index_j] === player * -1){
-                    info.push([x + index_j, y + index_i])
-                    connect += 1;
-                    index_i += value_i;
-                    index_j += value_j;
-                }
-                else{
-                    connect = 0;
-                    break;
-                }
+function check_finish(){
+    console.log("check finish");
+    for (let i = 0; i < map.length; i++){
+        for (let j = 0; j < map[0].length; j++){
+            if (map[i][j] === 0){
+                return false;
             }
-            if (connect > 0){
-                eliminate2(info[0][0], info[0][1], value_j, value_i);
+        }
+    }
+    return true;
+}
+
+function check_winner(x, y){
+    console.log("check winner");
+    if (connected(x, y,1, 0) ||  connected(x, y,0, 1) ||
+        connected(x, y,1, 1) || connected(x, y, -1, 1))
+        return true;
+    return false;
+}
+
+function connected(x, y, step_x, step_y){
+    let count = 0
+    for (let abc = 0; abc < 2; abc++){
+        let index_x = step_x;
+        let index_y = step_y;
+        while (0 <= x + index_x && x + index_x < map[0].length && 0 <= y + index_y && y + index_y < map.length){
+            if (map[y + index_y][x + index_x] !== player){
+                break;
             }
-            value_i *= -1;
-            value_j *= -1;
-            index_i = value_i;
-            index_j =value_j;
+            else{
+                count += 1;
+                index_x += step_x;
+                index_y += step_y;
+            }
+            if (count === 3){
+                return true;
+            }
         }
-        index_i = 0;
-        index_j = 1;
-        value_i = 0;
-        value_j = 1;
+        step_x *= -1;
+        step_y *= -1;
     }
-}
-
-function eliminate1(x, y, index_j, index_i){
-    console.log("eliminated1");
-    let i = index_i;
-    let j = index_j;
-    while (y + i < map.length && y + i >= 0 &&
-    x + j < map.length && x + j >= 0){
-        if (map[y + i][x + j] !== player * -1){
-            break;
-        }
-        else {
-            map[y + i][x + j] = 0;
-            i += index_i;
-            j += index_j;
-        }
-    }
-}
-
-function eliminate2(x, y, j, i) {
-    // console.log(x, y);
-    hairetu = new Array(9);       // セル
-    for (let i = 0; i < hairetu.length; i++) {
-        hairetu[i] = new Array(9);
-        for (let j = 0; j < hairetu[0].length; j++) {
-            hairetu[i][j] = 0;
-        }
-    }
-    if (saiki1(x, y)){
-        // console.log("y");
-        saiki2(x, y);
-    }
-    else{
-        // console.log("n");
-    }
-}
-
-function saiki1(x, y) {
-    if (y >= map.length || y < 0 ||
-    x >= map.length || x < 0){
-        // console.log("soto");
-        return true;
-    }
-    if (hairetu[y][x] !== 0){
-        // console.log("2kaime");
-        return true;
-    }
-    hairetu[y][x] = 1;
-    if(map[y][x] === 0){
-        // console.log("kuuhaku");
-        return false;
-    }
-    else if (map[y][x] === player){
-        // console.log("aite");
-        return true;
-    }
-    else{
-        // console.log("tonari");
-        if (saiki1(x + 1, y) && saiki1(x, y - 1) && saiki1(x - 1, y) && saiki1(x, y + 1)){
-            return true;
-        }
-        else{
-            return false;
-        }
-    }
-}
-
-function saiki2(x, y) {
-    if (y >= map.length || y < 0 ||
-    x >= map.length || x < 0){
-        // console.log("soto");
-        return;
-    }
-    else if(map[y][x] === 0){
-        // console.log("kuuhaku");
-        return;
-    }
-    else if (map[y][x] === player){
-        // console.log("aite");
-        return;
-    }
-    map[y][x] = 0;
-    if (player === my_num){
-        enemy_piece_n -= 1;
-    }
-    else{
-        my_piece_n -= 1;
-    }
-    saiki2(x + 1, y);
-    saiki2(x, y - 1);
-    saiki2(x - 1, y);
-    saiki2(x, y + 1);
+    return false;
 }
 
 
@@ -476,23 +333,9 @@ function onCanvasClick(e) {
  * @return true: 正解, false: ミス
  */
 function isTouched(x, y) {
-    if (player === my_num){
-        if (map[y][x] === player && !onlyone) {
-            predict(x, y)
-            map[y][x] = 2;
-            original = [x, y];
-            onlyone = true;
-        } else if (map[y][x] === 2 && onlyone) {
-            predict(x, y, false);
-            map[y][x] = player;
-            original = [-1, -1];
-            onlyone = false;
-        }else if (map[y][x] === 3) {
-            predict(original[0], original[1], false);
-            onlyone = false;
-            move(original[0], original[1], x, y);
-            writeDB(original[0], original[1], x, y);
-        }
+    if (player === my_num && map[y][x] === 2){
+        put(x, y);
+        writeDB(x, y);
     }
 }
 
@@ -510,7 +353,7 @@ function drawMap() {
     context.shadowOffsetY = null;
     context.shadowBlur = null;
     for (let y = 0; y < map.length; y++) {
-        for (let x = 0; x < map[y].length; x++) {
+        for (let x = 0; x < map[0].length; x++) {
             if (map[y][x] === 0) {
                 let left = STAGE_LEFT + CELL_SIZE * x;
                 let top = STAGE_TOP + CELL_SIZE * y;
@@ -531,19 +374,11 @@ function drawMap() {
                 let left = STAGE_LEFT + CELL_SIZE * x;
                 let top = STAGE_TOP + CELL_SIZE * y;
                 context.strokeStyle = "white";
-                context.fillStyle = "gray";
-                context.strokeRect(left, top, CELL_SIZE, CELL_SIZE);
-                context.fillRect(left, top, CELL_SIZE, CELL_SIZE);
-            }
-            else if (map[y][x] === 3){
-                let left = STAGE_LEFT + CELL_SIZE * x;
-                let top = STAGE_TOP + CELL_SIZE * y;
-                context.strokeStyle = "white";
                 context.fillStyle = "green";
                 context.strokeRect(left, top, CELL_SIZE, CELL_SIZE);
                 context.fillRect(left, top, CELL_SIZE, CELL_SIZE);
             }
-            else {
+            else if (map[y][x] === -1){
                 let left = STAGE_LEFT + CELL_SIZE * x;
                 let top = STAGE_TOP + CELL_SIZE * y;
                 context.strokeStyle = "white";
@@ -568,63 +403,13 @@ function drawTitle() {
     context.shadowOffsetX = null;
     context.shadowOffsetY = null;
     context.shadowBlur = null;
-    context.fillText("Hasami Shogi", 320, 100);
+    context.fillText("ConnectFour", 320, 100);
 
     context.fillStyle = "white";
     context.font = "45px arial";
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText("vs　" + enemy_name, 320, 250);
-}
-/**
- * スコアの描画
- */
-function drawTurn() {
-    context.fillStyle = "white";
-    context.font = "16px arial";
-    context.textAlign = "left";
-    context.textBaseline = "top";
-    context.shadowColor = null;
-    context.shadowOffsetX = null;
-    context.shadowOffsetY = null;
-    context.shadowBlur = null;
-    context.fillText("Turn", 16, 16);
-
-    context.fillStyle = "white";
-    context.font = "16px arial";
-    context.textAlign = "right";
-    context.textBaseline = "top";
-    context.shadowColor = null;
-    context.shadowOffsetX = null;
-    context.shadowOffsetY = null;
-    context.shadowBlur = null;
-    context.fillText(String(turn), 208, 32);
-}
-/**
- * ハイスコアの描画
- */
-function drawPieceNum() {
-    context.fillStyle = "white";
-    context.font = "16px arial";
-    context.textAlign = "left";
-    context.textBaseline = "top";
-    context.shadowColor = null;
-    context.shadowOffsetX = null;
-    context.shadowOffsetY = null;
-    context.shadowBlur = null;
-    context.fillText("my piece", 432, 15);
-    context.fillText("enemy piece", 432, 40);
-
-    context.fillStyle = "white";
-    context.font = "16px arial";
-    context.textAlign = "right";
-    context.textBaseline = "top";
-    context.shadowColor = null;
-    context.shadowOffsetX = null;
-    context.shadowOffsetY = null;
-    context.shadowBlur = null;
-    context.fillText(String(my_piece_n), 624, 15);
-    context.fillText(String(enemy_piece_n), 624, 40);
 }
 
 function drawResult() {
@@ -648,25 +433,10 @@ function drawResult() {
     context.shadowBlur = null;
     context.fillText(str, 320, 80);
 }
-/**
- * 背景の描画
- */
 function drawBackground() {
     context.fillStyle = 'black';
     context.fillRect(0, 0, 640, 640);
-    context.fillStyle = "white";
-    context.font = "50px arial";
-    context.textAlign = "center";
-    context.textBaseline = "middle";
-    context.shadowColor = null;
-    context.shadowOffsetX = null;
-    context.shadowOffsetY = null;
-    context.shadowBlur = null;
-    context.fillText("", 320, 100);
 }
-/**
- * カウントの描画
- */
 function drawCount() {
     strCount = count <= 0 ? "GO!" : count;
 
@@ -680,40 +450,25 @@ function drawCount() {
     context.shadowBlur = 20;
     context.fillText(strCount, canvas.width / 2, STAGE_TOP, STAGE_WIDTH);
 }
-/**
- * 残り時間の描画
- */
-function drawRemainingTime() {
-    context.fillStyle = remainingTime <= 5 ? "red" : "white";
-    context.font = "48px arial";
+
+function drawTurn() {
+    context.fillStyle = "red";
+    context.font = "40px arial";
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.shadowColor = null;
     context.shadowOffsetX = null;
     context.shadowOffsetY = null;
     context.shadowBlur = null;
-    context.fillText(String(remainingTime), 320, 40);
-}
-/**
- * タイムアップの描画
- */
-function drawTimeUp() {
-    context.fillStyle = "white";
-    context.font = "384px arial";
-    context.textAlign = "center";
-    context.textBaseline = "top";
-    context.shadowColor = "black";
-    context.shadowOffsetX = 5;
-    context.shadowOffsetY = 5;
-    context.shadowBlur = 20;
-    context.fillText("TIME UP!", canvas.width / 2, STAGE_TOP, STAGE_WIDTH);
+    let str = player === my_num ? "自分" : "相手";
+    context.fillText(String(str) + "のターンです", 320, 80);
 }
 
-function writeDB(xx, yy, x, y) {
+function writeDB(x, y) {
     const subject_num= new Number(turn).toString();
     console.log("set " + subject_num);
     roomref.collection("mapdata").doc(subject_num)
-        .set({"xx" : xx, "yy" : yy, "x" : x, "y" : y});
+        .set({"x" : x, "y" : y});
 }
 
 async function enter_detector(){
@@ -729,11 +484,9 @@ async function enter_detector(){
                     if (player !== my_num){
                         console.log(querySnapshot.docs[i].data());
                         // console.log(querySnapshot.docs[i].id);
-                        xx = 8 - querySnapshot.docs[i].data().xx;
-                        yy = 8 - querySnapshot.docs[i].data().yy;
-                        x = 8 - querySnapshot.docs[i].data().x;
-                        y = 8 - querySnapshot.docs[i].data().y;
-                        move(xx, yy, x, y);
+                        x = querySnapshot.docs[i].data().x;
+                        y = querySnapshot.docs[i].data().y;
+                        put(x, y);
                     }
                     else{
                         console.log("enemy turn");
