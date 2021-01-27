@@ -4,7 +4,6 @@
  * **** **** **** **** **** **** **** ****
  */
 INTERVAL = 32;          // 30FPS（1フレームを32ms間隔で処理）
-
 CELL_SIZE = 48;        // セルサイズ
 
 // ステージの位置
@@ -80,14 +79,6 @@ for (let y = 0; y < cells.length; y++) {
 for (let y = 0; y < cells.length; y++) {
     for (let x = 0; x < cells[y].length; x++) {
         cells[y][x] = new Cell(STAGE_LEFT + CELL_SIZE * x, STAGE_TOP + CELL_SIZE * y, CELL_SIZE, CELL_SIZE);
-    }
-}
-
-let data = new Array(9);       // セル
-for (let y = 0; y < data.length; y++) {
-    data[y] = new Array(9);
-    for (let x = 0; x < data[y].length; x++) {
-        data[y][x] = 0;
     }
 }
 
@@ -256,12 +247,6 @@ function resetMap() {
             else{
                 map[y][x] = 0;
             }
-        }
-    }
-
-    for (let y = 0; y < data.length; y++) {
-        for (let x = 0; x < data[0].length; x++) {
-            data[y][x] = 0;
         }
     }
 }
