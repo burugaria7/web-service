@@ -4,14 +4,21 @@
  * **** **** **** **** **** **** **** ****
  */
 INTERVAL = 32;          // 30FPS（1フレームを32ms間隔で処理）
-CELL_SIZE = 64;        // セルサイズ
+CELL_SIZE = 80;        // セルサイズ
 
 // ステージの位置
-STAGE_LEFT = 104;
-STAGE_TOP = 104;
 STAGE_WIDTH = 640;
-STAGE_HEIGHT = 640;
+STAGE_LEFT = STAGE_WIDTH / 2 - CELL_SIZE * 1.5
+STAGE_HEIGHT = 480;
+STAGE_TOP = STAGE_HEIGHT / 2 - CELL_SIZE * 1.5 + 40
 
+// STAGE_WIDTH = document.body.clientWidth;
+// if (STAGE_WIDTH > 640){
+//     STAGE_LEFT = (STAGE_WIDTH - 640) / 2;
+// }
+// else{
+//     STAGE_LEFT = 0;
+// }
 
 /**
  * **** **** **** **** **** **** **** ****
@@ -61,29 +68,31 @@ let isTitleGuide = true;        // タイトルガイド点滅用フラグ {true
 let lastTitleTime = -1;         // タイトルガイド表示切替用
 let lastCountDownTime = -1;     // カウントダウン表示用
 let lastPutTime = -1;           // 配置用
-let lastReducedTime = -1;       // 残り時間更新用
 let lastTimeUpTime = -1;        // タイムアップ表示用
 
 // ゲームデータ
 let map = null;                 // マップデータ
+let data = null;
 let count = -1;                 // カウントダウン用の残りカウント
 let remainingTime = -1;         // 残り時間
 let score = 0;                  // スコア
 let highScore = 0;              // ハイスコア
 
-let cells = new Array(6);       // セル
+let cells = new Array(3);       // セル
 for (let y = 0; y < cells.length; y++) {
-    cells[y] = new Array(7);
+    cells[y] = new Array(3);
 }
 for (let y = 0; y < cells.length; y++) {
     for (let x = 0; x < cells[y].length; x++) {
-        cells[y][x] = new Cell(STAGE_LEFT + CELL_SIZE * x, STAGE_TOP + CELL_SIZE * y, CELL_SIZE, CELL_SIZE);
+        cells[y][x] = new Cell(STAGE_LEFT + CELL_SIZE * x,
+            STAGE_TOP + CELL_SIZE * y, CELL_SIZE, CELL_SIZE);
     }
 }
 
 let turn = null;
 let winner = null;
-let placed = null;
+let backtitle = new Path2D();
+
 
 /**
  * **** **** **** **** **** **** **** ****
@@ -99,17 +108,19 @@ async function init() {
     // 描画用コンテキストの取得
     context = canvas.getContext("2d");
     // イベントリスナの追加
-    canvas.addEventListener('click', onCanvasClick, false);
+    canvas.addEventListener('click', onCanvasLClick, false);
 
     drawTitle();
 
     // ゲームデータのリセット
+    resetData();
 
     get_para();
     roomref = casualref.doc(room_id);
     await get_data();
     await enter_detector();
 }
+
 /**
  * メインループの開始
  */
@@ -124,6 +135,9 @@ function runMainLoop() {
 /**
  * メインループ
  */
+
+
+
 function mainLoop() {
     let mainLoopTimer = setTimeout(mainLoop, INTERVAL);
     let now = -1;
@@ -136,9 +150,11 @@ function mainLoop() {
             // 0.5秒に1回のタイミングでタイトルガイドを点滅させる。
             lastCountDownTime = Date.now();
             resetData();
-            phase = 1;
+            // カウントダウンフェーズに移行する。
+	        phase = 1;
         }
         drawTitle();
+        // drawBackTitle(backtitle);
         break;
     case 1:             // 以下を追加
         // カウントダウンフェーズ
@@ -166,6 +182,7 @@ function mainLoop() {
         // ゲームオーバーフェーズ
         now = Date.now();
         if (now - lastTimeUpTime >= 5000) {
+            // タイムアップ表示後3秒後にタイトルフェーズに移行する。
             lastTitleTime = Date.now();
 
             if (my_num === 1){
@@ -179,17 +196,12 @@ function mainLoop() {
             phase = 0;
         }
         drawBackground();
+        drawResult()
         drawMap();
-        drawResult();
         break;
     }
 }
 
-/**
- * **** **** **** **** **** **** **** ****
- * イベント関連
- * **** **** **** **** **** **** **** ****
- */
 /**
  * ページ読込み
  */
@@ -215,29 +227,26 @@ function windowToCanvas(wx, wy) {
  * ゲームデータのリセット
  */
 function resetData() {
+    resetMap();
     count = 3;
-    turn = 1;
     player = 1;
     winner = null;
-    placed = [5, 5, 5, 5, 5, 5, 5];
-    resetMap();
+    turn = 1;
 }
+
 /**
  * マップデータのリセット
  */
 function resetMap() {
-    map = new Array(6);       // セル
+    map = new Array(3);       // セル
     for (let y = 0; y < map.length; y++) {
-        map[y] = new Array(7);
+        map[y] = new Array(3);
         for (let x = 0; x < map[0].length; x++) {
-            if (placed[x] === y){
-                map[y][x] = 2;
-            }else {
-                map[y][x] = 0;
-            }
+            map[y][x] = 0;
         }
     }
 }
+
 /**
  * **** **** **** **** **** **** **** ****
  * イベント関連
@@ -245,10 +254,6 @@ function resetMap() {
  */
 function put(x, y){
     map[y][x] = player;
-    placed[x] -= 1;
-    if (placed[x] >= 0){
-        map[placed[x]][x] = 2;
-    }
     if (check_winner(x, y)){
         lastTimeUpTime = Date.now();
         winner = player;
@@ -263,7 +268,6 @@ function put(x, y){
 }
 
 function check_finish(){
-    console.log("check finish");
     for (let i = 0; i < map.length; i++){
         for (let j = 0; j < map[0].length; j++){
             if (map[i][j] === 0){
@@ -275,7 +279,6 @@ function check_finish(){
 }
 
 function check_winner(x, y){
-    console.log("check winner");
     if (connected(x, y,1, 0) ||  connected(x, y,0, 1) ||
         connected(x, y,1, 1) || connected(x, y, -1, 1))
         return true;
@@ -287,7 +290,7 @@ function connected(x, y, step_x, step_y){
     for (let abc = 0; abc < 2; abc++){
         let index_x = step_x;
         let index_y = step_y;
-        while (0 <= x + index_x && x + index_x < map[0].length && 0 <= y + index_y && y + index_y < map.length){
+        while (0 <= x + index_x && x + index_x < 3 && 0 <= y + index_y && y + index_y < 3){
             if (map[y + index_y][x + index_x] !== player){
                 break;
             }
@@ -296,7 +299,7 @@ function connected(x, y, step_x, step_y){
                 index_x += step_x;
                 index_y += step_y;
             }
-            if (count === 3){
+            if (count === 2){
                 return true;
             }
         }
@@ -306,23 +309,22 @@ function connected(x, y, step_x, step_y){
     return false;
 }
 
-
 /**
  * キャンバスへのマウスクリック
  */
-function onCanvasClick(e) {
+function onCanvasLClick(e) {
     let loc = windowToCanvas(e.clientX, e.clientY);
     switch (phase) {
     case 2:     // 以下を追加
         // タッチフェーズでセルがクリックされた
         for (let y = 0; y < cells.length; y++) {
-            for (let x = 0; x < cells[y].length; x++) {
+            for (let x = 0; x < cells[0].length; x++) {
                 if (cells[y][x].isWithin(loc.x, loc.y)) {
                     isTouched(x, y);
+                    break;
                 }
             }
         }
-        break;
     }
 }
 /**
@@ -332,11 +334,12 @@ function onCanvasClick(e) {
  * @return true: 正解, false: ミス
  */
 function isTouched(x, y) {
-    if (player === my_num && map[y][x] === 2){
+    if (map[y][x] === 0 && player === my_num){
         put(x, y);
         writeDB(x, y);
     }
 }
+
 
 /**
  * **** **** **** **** **** **** **** ****
@@ -347,53 +350,36 @@ function isTouched(x, y) {
  * マップの描画
  */
 function drawMap() {
-    context.shadowColor = null;
-    context.shadowOffsetX = null;
-    context.shadowOffsetY = null;
-    context.shadowBlur = null;
     for (let y = 0; y < map.length; y++) {
         for (let x = 0; x < map[0].length; x++) {
-            if (map[y][x] === 0) {
-                let left = STAGE_LEFT + CELL_SIZE * x;
-                let top = STAGE_TOP + CELL_SIZE * y;
-                context.strokeStyle = "white";
-                context.fillStyle = "yellow";
-                context.strokeRect(left, top, CELL_SIZE, CELL_SIZE);
-                context.fillRect(left, top, CELL_SIZE, CELL_SIZE);
-            }
-            else if (map[y][x] === 1){
-                let left = STAGE_LEFT + CELL_SIZE * x;
-                let top = STAGE_TOP + CELL_SIZE * y;
-                context.strokeStyle = "white";
-                context.fillStyle = "skyblue";
-                context.strokeRect(left, top, CELL_SIZE, CELL_SIZE);
-                context.fillRect(left, top, CELL_SIZE, CELL_SIZE);
-            }
-            else if (map[y][x] === 2){
-                let left = STAGE_LEFT + CELL_SIZE * x;
-                let top = STAGE_TOP + CELL_SIZE * y;
-                context.strokeStyle = "white";
-                context.fillStyle = "green";
-                context.strokeRect(left, top, CELL_SIZE, CELL_SIZE);
-                context.fillRect(left, top, CELL_SIZE, CELL_SIZE);
+            let left = STAGE_LEFT + CELL_SIZE * x;
+            let top = STAGE_TOP + CELL_SIZE * y;
+            let str = "";
+            context.strokeStyle = "black";
+            context.fillStyle = "white";
+            context.strokeRect(left, top, CELL_SIZE, CELL_SIZE);
+            context.fillRect(left, top, CELL_SIZE, CELL_SIZE);
+            context.fillStyle = "red";
+            context.font = "20px arial";
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            if (map[y][x] === 1){
+                str = "〇";
             }
             else if (map[y][x] === -1){
-                let left = STAGE_LEFT + CELL_SIZE * x;
-                let top = STAGE_TOP + CELL_SIZE * y;
-                context.strokeStyle = "white";
-                context.fillStyle = "red";
-                context.strokeRect(left, top, CELL_SIZE, CELL_SIZE);
-                context.fillRect(left, top, CELL_SIZE, CELL_SIZE);
+                str = "☓";
             }
+            context.fillText(str, STAGE_LEFT + CELL_SIZE * (x + 0.5), STAGE_TOP + CELL_SIZE * (y + 0.5));
         }
     }
 }
+
 /**
  * タイトル画面の描画
  */
 function drawTitle() {
     context.fillStyle = '#222222';
-    context.fillRect(0, 0, 640, 640);
+    context.fillRect(0, 0, 640, 480);
     context.fillStyle = "white";
     context.font = "50px arial";
     context.textAlign = "center";
@@ -402,15 +388,29 @@ function drawTitle() {
     context.shadowOffsetX = null;
     context.shadowOffsetY = null;
     context.shadowBlur = null;
-    context.fillText("ConnectFour", 320, 100);
+    context.fillText("Tictactoe", 320, 100);
 
     context.fillStyle = "white";
     context.font = "45px arial";
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText("vs　" + enemy_name, 320, 250);
+    //
+    // if (isTitleGuide === false) return;
+    //
+    // context.fillStyle = "white";
+    // context.font = "32px arial";
+    // context.textAlign = "center";
+    // context.textBaseline = "middle";
+    // context.shadowColor = null;
+    // context.shadowOffsetX = null;
+    // context.shadowOffsetY = null;
+    // context.shadowBlur = null;
+    // context.fillText("Click anywhere to start.", 320, 300);
 }
-
+/**
+ * スコアの描画
+ */
 function drawResult() {
     let str;
     if (winner === my_num){
@@ -432,23 +432,6 @@ function drawResult() {
     context.shadowBlur = null;
     context.fillText(str, 320, 80);
 }
-function drawBackground() {
-    context.fillStyle = 'black';
-    context.fillRect(0, 0, 640, 640);
-}
-function drawCount() {
-    strCount = count <= 0 ? "GO!" : count;
-
-    context.fillStyle = "white";
-    context.font = "384px arial";
-    context.textAlign = "center";
-    context.textBaseline = "top";
-    context.shadowColor = "black";
-    context.shadowOffsetX = 5;
-    context.shadowOffsetY = 5;
-    context.shadowBlur = 20;
-    context.fillText(strCount, canvas.width / 2, STAGE_TOP, STAGE_WIDTH);
-}
 
 function drawTurn() {
     context.fillStyle = "red";
@@ -463,17 +446,47 @@ function drawTurn() {
     context.fillText(String(str) + "のターンです", 320, 80);
 }
 
-function writeDB(x, y) {
-    const subject_num= new Number(turn).toString();
-    console.log("set " + subject_num);
-    roomref.collection("mapdata").doc(subject_num)
-        .set({"x" : x, "y" : y});
+/**
+ * 背景の描画
+ */
+function drawBackground() {
+    context.fillStyle = '#222222';
+    context.fillRect(0, 0, 640, 480);
+}
+
+/**
+ * カウントの描画
+ */
+function drawCount() {
+    let strCount = count <= 0 ? "GO!" : count;
+
+    context.fillStyle = "white";
+    context.font = "384px arial";
+    context.textAlign = "center";
+    context.textBaseline = "top";
+    context.shadowColor = "black";
+    context.shadowOffsetX = 5;
+    context.shadowOffsetY = 5;
+    context.shadowBlur = 20;
+    context.fillText(strCount, canvas.width / 2, STAGE_TOP - 70, STAGE_WIDTH);
+}
+
+function drawBackTitle(contex, y = 5, x = 5, w = 60, h = 40) {
+    contex.rect(x, y, w, h);
+    context.strokeStyle = "white";
+    context.fillStyle = "#00FFFF";
+    context.stroke(contex);
+    context.fill(contex);
+    context.fillStyle = "white";
+    context.textAlign = "center";
+    context.font = "20px serif";
+    context.fillText("back", x + 30, y + 20);
 }
 
 async function enter_detector(){
     console.log("enter_detector");
     let x, y;
-    let unsubscribe = await roomref.collection("mapdata").onSnapshot(function(querySnapshot){
+    let unsubscribe = await roomref.collection("mapdata").onSnapshot(function(querySnapshot) {
         if (player === my_num) console.log("enemy turn");
         else{
             for (let i = 0; i < querySnapshot.size; i++){
@@ -493,13 +506,29 @@ async function enter_detector(){
                 }
             }
         }
+        // querySnapshot.forEach(function(doc) {
+        // for (let i = turn - 1; i < querySnapshot.size; i++){
+        //     if (player !== my_num){
+        //         console.log(querySnapshot.docs[i].data());
+        //         put(querySnapshot.docs[i].data().x, querySnapshot.docs[i].data().y)
+        //     }
+        //     else{
+        //         console.log("enemy turn");
+        //     }
+        // }
         player *= -1;
         turn += 1;
     });
     if (phase === 3){
-        console.log("on fin");
         unsubscribe();
     }
+}
+
+function writeDB(x, y) {
+     const subject_num= new Number(turn).toString();
+    console.log("set " + subject_num);
+    roomref.collection("mapdata").doc(subject_num)
+        .set({"x" : x, "y" : y});
 }
 
 function get_para(){
@@ -521,4 +550,8 @@ async function get_data() {
     }
     console.log("mynum " + my_num);
 }
+
+
+
+
 

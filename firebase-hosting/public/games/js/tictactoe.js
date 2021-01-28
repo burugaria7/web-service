@@ -92,8 +92,6 @@ for (let y = 0; y < cells.length; y++) {
 let turn = null;
 let winner = null;
 let backtitle = new Path2D();
-let enemy_moved = null;
-let enemy_move = null;
 
 
 /**
@@ -234,7 +232,6 @@ function resetData() {
     player = 1;
     winner = null;
     turn = 1;
-    enemy_moved = false;
 }
 
 /**
@@ -488,17 +485,37 @@ function drawBackTitle(contex, y = 5, x = 5, w = 60, h = 40) {
 
 async function enter_detector(){
     console.log("enter_detector");
+    let x, y;
     let unsubscribe = await roomref.collection("mapdata").onSnapshot(function(querySnapshot) {
-        // querySnapshot.forEach(function(doc) {
-        for (let i = turn - 1; i < querySnapshot.size; i++){
-            if (player !== my_num){
-                console.log(querySnapshot.docs[i].data());
-                put(querySnapshot.docs[i].data().x, querySnapshot.docs[i].data().y)
-            }
-            else{
-                console.log("enemy turn");
+        if (player === my_num) console.log("enemy turn");
+        else{
+            for (let i = 0; i < querySnapshot.size; i++){
+                // console.log(querySnapshot.docs[i].id);
+                // console.log(turn);
+                if (querySnapshot.docs[i].id == turn){
+                    if (player !== my_num){
+                        console.log(querySnapshot.docs[i].data());
+                        // console.log(querySnapshot.docs[i].id);
+                        x = querySnapshot.docs[i].data().x;
+                        y = querySnapshot.docs[i].data().y;
+                        put(x, y);
+                    }
+                    else{
+                        console.log("enemy turn");
+                    }
+                }
             }
         }
+        // querySnapshot.forEach(function(doc) {
+        // for (let i = turn - 1; i < querySnapshot.size; i++){
+        //     if (player !== my_num){
+        //         console.log(querySnapshot.docs[i].data());
+        //         put(querySnapshot.docs[i].data().x, querySnapshot.docs[i].data().y)
+        //     }
+        //     else{
+        //         console.log("enemy turn");
+        //     }
+        // }
         player *= -1;
         turn += 1;
     });
@@ -508,7 +525,7 @@ async function enter_detector(){
 }
 
 function writeDB(x, y) {
-     const subject_num= new Number(turn - 1).toString();
+     const subject_num= new Number(turn).toString();
     console.log("set " + subject_num);
     roomref.collection("mapdata").doc(subject_num)
         .set({"x" : x, "y" : y});
