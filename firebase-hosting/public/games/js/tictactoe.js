@@ -290,7 +290,7 @@ function connected(x, y, step_x, step_y){
     for (let abc = 0; abc < 2; abc++){
         let index_x = step_x;
         let index_y = step_y;
-        while (0 <= x + index_x && x + index_x < 3 && 0 <= y + index_y && y + index_y < 3){
+        while (0 <= x + index_x && x + index_x < map[0].length && 0 <= y + index_y && y + index_y < map.length){
             if (map[y + index_y][x + index_x] !== player){
                 break;
             }

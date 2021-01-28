@@ -4,13 +4,13 @@
  * **** **** **** **** **** **** **** ****
  */
 INTERVAL = 32;          // 30FPS（1フレームを32ms間隔で処理）
-CELL_SIZE = 80;        // セルサイズ
+CELL_SIZE = 48;        // セルサイズ
 
 // ステージの位置
 STAGE_WIDTH = 640;
-STAGE_LEFT = STAGE_WIDTH / 2 - CELL_SIZE * 1.5
+STAGE_LEFT = STAGE_WIDTH / 2 - CELL_SIZE * 4.5
 STAGE_HEIGHT = 480;
-STAGE_TOP = STAGE_HEIGHT / 2 - CELL_SIZE * 1.5 + 40
+STAGE_TOP = STAGE_HEIGHT / 2 - CELL_SIZE * 2.5
 
 // STAGE_WIDTH = document.body.clientWidth;
 // if (STAGE_WIDTH > 640){
@@ -78,9 +78,9 @@ let remainingTime = -1;         // 残り時間
 let score = 0;                  // スコア
 let highScore = 0;              // ハイスコア
 
-let cells = new Array(3);       // セル
+let cells = new Array(9);       // セル
 for (let y = 0; y < cells.length; y++) {
-    cells[y] = new Array(3);
+    cells[y] = new Array(9);
 }
 for (let y = 0; y < cells.length; y++) {
     for (let x = 0; x < cells[y].length; x++) {
@@ -238,9 +238,9 @@ function resetData() {
  * マップデータのリセット
  */
 function resetMap() {
-    map = new Array(3);       // セル
+    map = new Array(9);       // セル
     for (let y = 0; y < map.length; y++) {
-        map[y] = new Array(3);
+        map[y] = new Array(9);
         for (let x = 0; x < map[0].length; x++) {
             map[y][x] = 0;
         }
@@ -268,6 +268,7 @@ function put(x, y){
 }
 
 function check_finish(){
+    console.log("check finish");
     for (let i = 0; i < map.length; i++){
         for (let j = 0; j < map[0].length; j++){
             if (map[i][j] === 0){
@@ -279,6 +280,7 @@ function check_finish(){
 }
 
 function check_winner(x, y){
+    console.log("check winner");
     if (connected(x, y,1, 0) ||  connected(x, y,0, 1) ||
         connected(x, y,1, 1) || connected(x, y, -1, 1))
         return true;
@@ -290,7 +292,7 @@ function connected(x, y, step_x, step_y){
     for (let abc = 0; abc < 2; abc++){
         let index_x = step_x;
         let index_y = step_y;
-        while (0 <= x + index_x && x + index_x < 3 && 0 <= y + index_y && y + index_y < 3){
+        while (0 <= x + index_x && x + index_x < map[0].length && 0 <= y + index_y && y + index_y < map.length){
             if (map[y + index_y][x + index_x] !== player){
                 break;
             }
@@ -299,10 +301,11 @@ function connected(x, y, step_x, step_y){
                 index_x += step_x;
                 index_y += step_y;
             }
-            if (count === 2){
+            if (count === 4){
                 return true;
             }
         }
+        console.log(count);
         step_x *= -1;
         step_y *= -1;
     }
@@ -379,7 +382,7 @@ function drawMap() {
  */
 function drawTitle() {
     context.fillStyle = '#222222';
-    context.fillRect(0, 0, 640, 480);
+    context.fillRect(0, 0, 800, 800);
     context.fillStyle = "white";
     context.font = "50px arial";
     context.textAlign = "center";
@@ -388,7 +391,7 @@ function drawTitle() {
     context.shadowOffsetX = null;
     context.shadowOffsetY = null;
     context.shadowBlur = null;
-    context.fillText("Tictactoe", 320, 100);
+    context.fillText("GomokuNarabe", 320, 100);
 
     context.fillStyle = "white";
     context.font = "45px arial";
@@ -451,7 +454,7 @@ function drawTurn() {
  */
 function drawBackground() {
     context.fillStyle = '#222222';
-    context.fillRect(0, 0, 640, 480);
+    context.fillRect(0, 0, 800, 800);
 }
 
 /**
