@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+    <a href="index.html">auth</a>
+    <a href="games/minesweeper.html">Minesweeper</a>
+    <!--    <a href="games/tictactoe.html">Tictactoe</a>-->
+    <!--    <a href="games/hasamishogi.html">HasamiShogi</a>-->
+    <!--    <a href="games/connectfour.html">ConnectFour</a>-->
+    <!--    <a href="games/gomokunarabe.html">GomokuNarabe</a>-->
+    <br>
+    <input type="button" id="button0" onclick="matching('tictactoe', this.id)" value="PVP Tictactoe">
+    <input type="button" id="button1" onclick="matching('hasamishogi', this.id)" value="PVP HasamiShogi">
+    <input type="button" id="button2" onclick="matching('connectfour', this.id)" value="PVP ConnectFour">
+    <input type="button" id="button3" onclick="matching('gomokunarabe', this.id)" value="PVP Gomokunarabe">
+    <br>
+    <input type="button" id="cansel" onclick="cansel()" value="キャンセル" disabled>
+    <input type="button" id="delete" onclick="room_delete()" value="削除" disabled>
+    <br>
+    <div id="name_1"></div>
+    <div id="name_2"></div>
+
+    <!--    <h1>...Please wait</h1>-->
+    <!--    <div id="info"></div>-->
+
+    <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-app.js"></script>
+    <!-- If you enabled Analytics in your project, add the Firebase SDK for Analytics -->
+    <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-analytics.js"></script>
+    <!-- Add Firebase products that you want to use -->
+    <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-firestore.js"></script>
+    <script src="./config.js"></script>
+    <script>
+        // TODO: Replace the following with your app's Firebase project configuration
+        // For Firebase JavaScript SDK v7.20.0 and later, `measurementId` is an optional field
+        var config = {
+            apiKey: "AIzaSyBd0lVP2y9PXw8A0xQCc7C-t7UWgPdk7kY",
+            authDomain: "recess-web.firebaseapp.com",
+            databaseURL: "https://recess-web-default-rtdb.firebaseio.com/",
+            projectId: "recess-web",
+            storageBucket: "gs://recess-web.appspot.com"
+        };
+        firebase.initializeApp(config);
+    </script>
+
+    <!--    <script>-->
+    <!--        firebase.auth().onAuthStateChanged((user) => {-->
+    <!--            let h1 = document.querySelector('h1');-->
+    <!--            let info = document.querySelector('#info');-->
+
+    <!--            if (user) {-->
+    <!--                h1.innerText = 'Login Complete!';-->
+    <!--                info.innerHTML = `${user.displayName}さんがログインしました`;-->
+    <!--            } else {-->
+    <!--                h1.innerText = 'Not Login';-->
+    <!--            }-->
+    <!--        });-->
+    <!--    </script>-->
+
+    <script>
+        var db = firebase.firestore();
+
+        var user;
+        let room_id;
+        let find;
+        let phase;
+        let unsubscribe;
+        let game_id, button_id;
+        let gameref, casualref;
+
+        firebase.auth().onAuthStateChanged((userinfo) => {
+            if (userinfo) {
+                user = userinfo;
+                console.log("login");
+                console.log(user.displayName);
+            } else {
+                console.log("not login");
+            }
+        });
+
+        function cansel() {
+            console.log("cansel");
+            console.log(room_id);
+            unsubscribe();
+            var roomref = casualref.doc(String(room_id));
+            if (document.getElementById(button_id).disabled) {
+                document.getElementById(button_id).disabled = false;
+                document.getElementById("cansel").disabled = true;
+                roomref.delete().catch(function (error) {
+                    console.error("Error removing document: ", error);
+                });
+                room_id = null;
+                phase = null;
+            }
+            else {
+                document.getElementById("cansel").disabled = false;
+            }
+        }
+
+        function room_delete(){
+            db.collection("rooms").doc("connectfour");
+        }
+
+        async function matching(gameid, buttonid) {
+            game_id = gameid;
+            button_id = buttonid;
+            gameref = db.collection("rooms").doc(game_id);
+            casualref = gameref.collection("casual");
+            find = false;
+            phase = 0;
+            document.getElementById(button_id).disabled = true;
+            document.getElementById("cansel").disabled = false;
+            if (phase === 0) {
+                console.log("matching...");
+                await check_room();
+                //enter_room()はawaitで呼ぶな絶対、ばぐるぞ
+                if (find && (enter_room())) {
+                }
+                else {
+                    await create_room();
+                    await enter_detector();
+                }
+                console.log("match");
+            }
+        }
+
+        async function create_room() {
+            console.log("create");
+            let doc = await casualref.add({ "now_people": 1, "player_1": user.displayName });
+            room_id = doc.id;
+            console.log(room_id);
+        }
+
+        async function enter_detector() {
+            var roomref = casualref.doc(String(room_id));
+            console.log("enter_detector");
+            let f = false;
+            unsubscribe = await roomref.onSnapshot(function (snapshot) {
+                if (f) {
+                    console.log(snapshot.data());
+                    unsubscribe();
+                    skip_to_game();
+                }
+                else {
+                    f = true;
+                }
+            });
+            if (f) {
+                unsubscribe();
+                console.log("fin");
+            }
+        }
+
+        // ビジーwaitを使う方法
+        function sleep(waitMsec) {
+            var startMsec = new Date();
+
+            // 指定ミリ秒間だけループさせる（CPUは常にビジー状態）
+            while (new Date() - startMsec < waitMsec);
+        }
+
+        async function enter_room() {
+            console.log("enter");
+
+            //ここからトランザクション開始
+            var casuDocRef = casualref.doc(room_id);
+            return db.runTransaction(function (transaction) {
+                // This code may get re-run multiple times if there are conflicts.
+                console.log("test");
+                return transaction.get(casuDocRef).then(function (casuDoc) {
+                    if (!casuDoc.exists) {
+                        throw "Document does not exist!";
+                    }
+                    // Add one person to the city population.
+                    // Note: this could be done without a transaction
+                    //       by updating the population using FieldValue.increment()
+                    var new_people_sum = casuDoc.data().now_people + 1;
+                    console.log("now");
+                    console.log(new_people_sum);
+                    if (new_people_sum > 2) {
+                        console.log("FKFKFKFKF");
+                        throw "Document does not exist!";
+                    }
+                    let player_definition_name = "player_" + new_people_sum;
+                    transaction.update(casuDocRef, {
+                        "now_people": new_people_sum,
+                        "player_2": user.displayName,
+                    });
+                });
+            }).then(function () {
+                console.log("Transaction successfully committed!");
+                console.log("MATCH!!!!!!");
+                skip_to_game();
+            }).catch(function (error) {
+                console.log("Transaction failed: ", error);
+                //同時にルーム作成を避けるためにランダムウェイトを入れる
+                sleep((Math.random() * 3000));
+                //再帰的にマッチング
+                matching(game_id, button_id);
+            });
+        }
+
+        async function get_nowpeople() {
+            let querySnapshot = await casualref.doc(room_id).get();
+            return querySnapshot.data().now_people;
+        }
+
+        async function check_room() {
+            console.log("check");
+            try {
+                await casualref.where("now_people", "==", 1)
+                    .get().then(function (querySnapshot) {
+                        // console.log("test1");
+                        for (let i = 0; i < querySnapshot.size; i++) {
+                            var childKey = querySnapshot.docs[i].id;
+                            var childData = querySnapshot.docs[i].data().now_people;
+                            // console.log(childKey);
+                            // console.log(childData);
+                            if (childData === 1) {
+                                // console.log("in");
+                                room_id = childKey;
+                                find = true;
+                                return;
+                            }
+                        }
+                    });
+            } catch (e) {
+                console.log("error");
+            }
+        }
+
+        async function skip_to_game() {
+            console.log("fight");
+            await casualref.doc(room_id)
+                .get().then(function (querySnapshot) {
+                    document.getElementById("name_1").innerHTML = querySnapshot.data().player_1;
+                    document.getElementById("name_2").innerHTML = querySnapshot.data().player_2;
+                });
+            phase = 1;
+            window.location.href = "games/" + game_id + ".html?" + "roomid=" + room_id;
+        }
+    </script>
+
+</body>
+
+
+</html>
