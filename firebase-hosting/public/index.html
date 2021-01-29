@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 
 <head>
+    <title>firebase auth テスト</title>
     <meta charset="UTF-8">
     <title>Title</title>
     <script src="https://cdn.firebase.com/libs/firebaseui/3.5.2/firebaseui.js"></script>
@@ -10,25 +11,42 @@
 </head>
 
 <body>
-    auth へようこそ！
-    <a href="/">title</a>
+    <h1>テスト用認証アプリ</h1>
 
-    <div id="firebaseui-auth-container"></div>
-    <div id="loader">Loading...</div>
+    <!-- メールアドレス入力フォーム -->
+    <div>
+        <label for="email">Email</label>
+        <input type="email" id="email" />
+    </div>
+
+    <!-- パスワード入力フォーム -->
+    <div>
+        <label for="password">Password</label>
+        <input type="password" id="password" />
+    </div>
+
+    <!-- ボタン -->
+    <button id="sign-up" onclick="onSignUpButtonClicked();">sign up</button>
+    <button id="sign-in" onclick="onSignInButtonClicked();">sign in</button>
+    <button id="sign-out" onclick="onSignOutButtonClicked();">sign out</button>
+
+    <!-- ユーザー情報の出力用エリア -->
+    <h2>ユーザー情報</h2>
+    <div id="userinfo">
+    </div>
+
+    <!-- ログ出力エリア -->
+    <h2>ログ</h2>
+    <p id="log"></p>
 
     <!-- Insert these scripts at the bottom of the HTML, but before you use any Firebase services -->
-
     <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
     <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-app.js"></script>
-
     <!-- If you enabled Analytics in your project, add the Firebase SDK for Analytics -->
     <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-analytics.js"></script>
-
     <!-- Add Firebase products that you want to use -->
     <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-firestore.js"></script>
-
-
     <script>
         // TODO: Replace the following with your app's Firebase project configuration
         // For Firebase JavaScript SDK v7.20.0 and later, `measurementId` is an optional field
@@ -41,30 +59,7 @@
         };
         firebase.initializeApp(config);
     </script>
-
-    <script type="text/javascript">
-        var ui = new firebaseui.auth.AuthUI(firebase.auth());
-
-        var uiConfig = {
-            callbacks: {
-                signInSuccessWithAuthResult: function (authResult, redirectUrl) {
-                    return true;
-                },
-                uiShown: function () {
-                    document.getElementById('loader').style.display = 'none';
-                }
-            },
-            signInFlow: 'popup',
-            signInSuccessUrl: './title.html',
-            signInOptions: [
-                firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-                firebase.auth.EmailAuthProvider.PROVIDER_ID,
-            ],
-        };
-        ui.start('#firebaseui-auth-container', uiConfig);
-    </script>
-
-
+    <script src="main.js"></script>
 </body>
 
 </html>
