@@ -2,8 +2,32 @@
 <html>
 
 <body>
+<<<<<<< HEAD
     <h1>...Please wait</h1>
     <div id="info"></div>
+=======
+    <a href="index.html">auth</a>
+    <a href="games/minesweeper.html">Minesweeper</a>
+    <!--    <a href="games/tictactoe.html">Tictactoe</a>-->
+    <!--    <a href="games/hasamishogi.html">HasamiShogi</a>-->
+    <!--    <a href="games/connectfour.html">ConnectFour</a>-->
+    <!--    <a href="games/gomokunarabe.html">GomokuNarabe</a>-->
+        <a href="games/fiveone.html">FiveOne</a>
+    <br>
+    <input type="button" id="button0" onclick="matching('tictactoe', this.id)" value="PVP Tictactoe">
+    <input type="button" id="button1" onclick="matching('hasamishogi', this.id)" value="PVP HasamiShogi">
+    <input type="button" id="button2" onclick="matching('connectfour', this.id)" value="PVP ConnectFour">
+    <input type="button" id="button3" onclick="matching('gomokunarabe', this.id)" value="PVP Gomokunarabe">
+    <br>
+    <input type="button" id="cansel" onclick="cansel()" value="キャンセル" disabled>
+    <input type="button" id="delete" onclick="room_delete()" value="削除" disabled>
+    <br>
+    <div id="name_1"></div>
+    <div id="name_2"></div>
+
+    <!--    <h1>...Please wait</h1>-->
+    <!--    <div id="info"></div>-->
+>>>>>>> origin/newgame
 
     <script src="https://www.gstatic.com/firebasejs/7.23.0/firebase-app.js"></script>
     <!-- If you enabled Analytics in your project, add the Firebase SDK for Analytics -->
