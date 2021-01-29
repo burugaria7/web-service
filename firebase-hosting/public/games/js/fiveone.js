@@ -12,40 +12,6 @@ STAGE_TOP = 104;
 STAGE_WIDTH = 640;
 STAGE_HEIGHT = 640;
 
-
-/**
- * **** **** **** **** **** **** **** ****
- * クラス
- * **** **** **** **** **** **** **** ****
- */
-/**
- * セルクラス
- */
-class Cell {
-    /**
-     * @param left      左端のx座標
-     * @param top       上端のy座標
-     * @param width     セルの幅
-     * @param height    セルの高さ
-     */
-    constructor(left, top, width, height) {
-        this.left = left;
-        this.top = top;
-        this.width = width;
-        this.height = height;
-    }
-    /**
-     * x, y座標がセルの範囲内か判定
-     * @param x x座標
-     * @param y y座標
-     */
-    isWithin(x, y) {
-        if (x < this.left || this.left + this.width < x) return false;
-        if (y < this.top || this.top + this.height < y) return false;
-        return true;
-    }
-}
-
 /**
  * **** **** **** **** **** **** **** ****
  * グローバル変数
@@ -71,19 +37,23 @@ let remainingTime = -1;         // 残り時間
 let score = 0;                  // スコア
 let highScore = 0;              // ハイスコア
 
-let cells = new Array(6);       // セル
-for (let y = 0; y < cells.length; y++) {
-    cells[y] = new Array(7);
-}
-for (let y = 0; y < cells.length; y++) {
-    for (let x = 0; x < cells[y].length; x++) {
-        cells[y][x] = new Cell(STAGE_LEFT + CELL_SIZE * x, STAGE_TOP + CELL_SIZE * y, CELL_SIZE, CELL_SIZE);
-    }
-}
-
 let turn = null;
-let winner = null;
+let winner = [0, 0, 0];
 let placed = null;
+let round = 0;
+let my_hund = ["?", "?", "?"];
+let enemy_hund = ["?", "?", "?"];
+let my_answer = ["?", "?", "?"];
+let enemy_answer = ["?", "?", "?"];
+let answer = null;
+let select = null;
+let selected = null;
+let changed = null;
+let decision = new Path2D();
+let selected_card = null;
+let selected_class = null;
+let carddata = null;
+let classdata = null;
 
 /**
  * **** **** **** **** **** **** **** ****
@@ -140,6 +110,7 @@ function mainLoop() {
             phase = 2;
         }
         drawTitle();
+        drawround();
         break;
     case 1:             // 以下を追加
         // カウントダウンフェーズ
@@ -154,6 +125,7 @@ function mainLoop() {
             }
         }
         drawTitle();
+        drawround();
         drawCount();
         break;
     case 2:                 // 以下を追加
@@ -162,26 +134,34 @@ function mainLoop() {
         drawBackground();
         drawMap();
         drawTurn();
+        drawround();
         break;
     case 3:     // 以下を追加
         // ゲームオーバーフェーズ
         now = Date.now();
-        if (now - lastTimeUpTime >= 5000) {
-            lastTitleTime = Date.now();
+        if (round === 3){
+            if (now - lastTimeUpTime >= 5000) {
+                lastTitleTime = Date.now();
 
-            if (my_num === 1){
-                roomref.delete().then(function() {
-                    console.log("Document successfully deleted!");
-                }).catch(function(error) {
-                    console.error("Error removing document: ", error);
-                });
+                if (my_num === 1){
+                    roomref.delete().then(function() {
+                        console.log("Document successfully deleted!");
+                    }).catch(function(error) {
+                        console.error("Error removing document: ", error);
+                    });
+                }
+                window.location.href = "../../title.html";
+                phase = 0;
             }
-            window.location.href = "../../title.html";
+        }
+        else{
+            lastTitleTime = Date.now();
             phase = 0;
         }
         drawBackground();
         drawMap();
         drawResult();
+        drawround();
         break;
     }
 }
@@ -219,24 +199,28 @@ function resetData() {
     count = 3;
     turn = 1;
     player = 1;
-    winner = null;
-    placed = [5, 5, 5, 5, 5, 5, 5];
     resetMap();
+    round += 1;
     my_num = 1;
+    createhund();
+    select = [false, false, false];
+    selected = false;
+    changed = false;
+    selected_card = [false, false, false];
+    selected_class = [false, false, false, false, false];
+    carddata = [110, 270, 430];
+    classdata = [["★", 65], ["●", 175], ["■", 285], ["▲", 395], ["✖", 505]];
+
 }
 /**
  * マップデータのリセット
  */
 function resetMap() {
-    map = new Array(6);       // セル
+    map = new Array(5);       // セル
     for (let y = 0; y < map.length; y++) {
-        map[y] = new Array(7);
+        map[y] = new Array(3);
         for (let x = 0; x < map[0].length; x++) {
-            if (placed[x] === y){
-                map[y][x] = 2;
-            }else {
-                map[y][x] = 0;
-            }
+            map[y][x] = 0;
         }
     }
 }
@@ -245,68 +229,83 @@ function resetMap() {
  * イベント関連
  * **** **** **** **** **** **** **** ****
  */
-function put(x, y){
-    map[y][x] = player;
-    placed[x] -= 1;
-    if (placed[x] >= 0){
-        map[placed[x]][x] = 2;
-    }
-    if (check_winner(x, y)){
-        lastTimeUpTime = Date.now();
-        winner = player;
-        phase = 3;
-        return;
-    }
-    if (check_finish()){
-        lastTimeUpTime = Date.now();
-        winner = 0;
-        phase = 3;
-    }
-}
 
-function check_finish(){
-    console.log("check finish");
-    for (let i = 0; i < map.length; i++){
-        for (let j = 0; j < map[0].length; j++){
-            if (map[i][j] === 0){
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-function check_winner(x, y){
-    console.log("check winner");
-    if (connected(x, y,1, 0) ||  connected(x, y,0, 1) ||
-        connected(x, y,1, 1) || connected(x, y, -1, 1))
-        return true;
-    return false;
-}
-
-function connected(x, y, step_x, step_y){
-    let count = 0
-    for (let abc = 0; abc < 2; abc++){
-        let index_x = step_x;
-        let index_y = step_y;
-        while (0 <= x + index_x && x + index_x < map[0].length && 0 <= y + index_y && y + index_y < map.length){
-            if (map[y + index_y][x + index_x] !== player){
+function createhund() {
+    for (let i = 0; i < 7; i++){
+        while (true){
+            let max_x = 3;
+            let max_y = 5;
+            let y = Math.floor(Math.random() * (max_y));
+            let x = Math.floor(Math.random() * (max_x));
+            if (i === 0){
+                console.log(x, y, "2");
+                map[y][x] = 2;
+                answer = returnclass(y);
                 break;
             }
-            else{
-                count += 1;
-                index_x += step_x;
-                index_y += step_y;
+            else if(i === 1 || i === 2|| i === 3 && map[y][x] === 0){
+                console.log(x, y, "1");
+                map[y][x] = 1;
+                my_hund[i - 1] = returnclass(y);
+                break;
             }
-            if (count === 3){
-                return true;
+            else if (i === 4 || i === 5 || i === 6 && map[y][x] === 0){
+                console.log(x, y, "-1");
+                map[y][x] = -1;
+                // enemy_hund[i - 4] = returnclass(y);
+                break;
             }
         }
-        step_x *= -1;
-        step_y *= -1;
     }
-    return false;
+    console.log(map);
 }
+
+function changehund() {
+    console.log("change");
+    for (let i = 0; i < selected_card.length; i++){
+        if (selected_card[i]){
+            while (true){
+                let max_x = 3;
+                let max_y = 5;
+                let y = Math.floor(Math.random() * (max_y));
+                let x = Math.floor(Math.random() * (max_x));
+                if (map[y][x] === 0){
+                    console.log(x, y, "1");
+                    map[y][x] = 1;
+                    my_hund[i] = returnclass(y);
+                    selected_card[i] = false;
+                    break;
+                }
+            }
+        }
+    }
+    console.log(map);
+}
+
+function judge() {
+    console.log("judge");
+    for (let i = 0; i < selected_class.length; i++){
+        if (selected_class[i]){
+            if (map[i].includes(2)){
+                console.log("正解！");
+            }
+            else{
+                console.log("不正解！");
+            }
+            selected_class[i] = false;
+            return;
+        }
+    }
+}
+
+function returnclass(y) {
+    if (y === 0) return "★";
+    else if (y === 1) return "●";
+    else if (y === 2) return "■";
+    else if (y === 3) return "▲";
+    else if (y === 4) return "✖";
+}
+
 
 
 /**
@@ -316,27 +315,55 @@ function onCanvasClick(e) {
     let loc = windowToCanvas(e.clientX, e.clientY);
     switch (phase) {
     case 2:     // 以下を追加
-        // タッチフェーズでセルがクリックされた
-        for (let y = 0; y < cells.length; y++) {
-            for (let x = 0; x < cells[y].length; x++) {
-                if (cells[y][x].isWithin(loc.x, loc.y)) {
-                    isTouched(x, y);
+        if (context.isPointInPath(decision, loc.x, loc.y) && selected) {
+            console.log("decision");
+            selected = false;
+            if (selected_card.includes(true)){
+                // selected_card = [false, false, false];
+                changehund();
+                changed = true;
+            } else if (selected_class.includes(true)) {
+                // selected_class = [false, false, false, false, false];
+                judge();
+            }
+            break;
+        }
+
+        if (!selected_card.includes(true) && !selected_class.includes(true)){
+            for (let i = 0; i < classdata.length; i++) {
+                drawclass(classdata[i][0], classdata[i][1], selected_class[i]);
+                if (context.isPointInPath(loc.x, loc.y)) {
+                    console.log("class", i);
+                    selected = true;
+                    if (selected_class[i]) {
+                        selected_class[i] = false;
+                        selected = false;
+                    } else {
+                        selected_class[i] = true;
+                    }
+                    break;
                 }
             }
         }
+
+        if (!selected_class.includes(true) && !changed) {
+            for (let i = 0; i < carddata.length; i++) {
+                drawcard(my_hund[i], carddata[i], selected_card[i]);
+                if (context.isPointInPath(loc.x, loc.y)) {
+                    console.log("card", i);
+                    selected = true;
+                    if (selected_card[i]) {
+                        selected_card[i] = false;
+                        selected = false;
+                    } else {
+                        selected_card[i] = true;
+                    }
+                    break;
+                }
+            }
+        }
+
         break;
-    }
-}
-/**
- * ターゲットがタッチされたか判定
- * @param x タッチされたx座標
- * @param y タッチされたy座標
- * @return true: 正解, false: ミス
- */
-function isTouched(x, y) {
-    if (player === my_num && map[y][x] === 2){
-        put(x, y);
-        writeDB(x, y);
     }
 }
 
@@ -346,20 +373,44 @@ function isTouched(x, y) {
  * **** **** **** **** **** **** **** ****
  */
 function drawMap() {
-    drawcard("★", 120);
-    drawcard("●", 280);
-    drawcard("■", 440);
-    drawclass("★", 70);
-    drawclass("●", 170);
-    drawclass("■", 270);
-    drawclass("▲", 370);
-    drawclass("✖", 500);
+    drawcard(enemy_hund[0], carddata[0], false, 110);
+    drawcard(enemy_hund[1], carddata[1], false, 110);
+    drawcard(enemy_hund[2], carddata[2], false, 110);
+
+    drawcard(my_hund[0], carddata[0], selected_card[0]);
+    drawcard(my_hund[1], carddata[1], selected_card[1]);
+    drawcard(my_hund[2], carddata[2], selected_card[2]);
+
+    drawanswer(my_answer[0], 10, 310);
+    drawanswer(my_answer[1], 10, 350);
+    drawanswer(my_answer[2], 10, 390);
+
+    drawanswer(enemy_answer[0], 600, 130);
+    drawanswer(enemy_answer[1], 600, 170);
+    drawanswer(enemy_answer[2], 600, 210);
+
+    drawclass(classdata[0][0], classdata[0][1], selected_class[0]);
+    drawclass(classdata[1][0], classdata[1][1], selected_class[1]);
+    drawclass(classdata[2][0], classdata[2][1], selected_class[2]);
+    drawclass(classdata[3][0], classdata[3][1], selected_class[3]);
+    drawclass(classdata[4][0], classdata[4][1], selected_class[4]);
+
+    drawline(90);
+    drawline(270);
+    drawline(450);
+
+    drawbutton(decision,273);
 }
 
-function drawcard(word, x, y = 200) {
+function drawcard(word, x, f, y = 290, h= 140) {
     context.beginPath();
-    context.rect(x, y, 100, 160);
-    context.fillStyle = 'white';
+    context.rect(x, y, 100, h);
+    if(f) {
+        context.fillStyle = 'gray';
+    }
+    else{
+        context.fillStyle = 'white';
+    }
     context.fill();
     context.lineWidth = 2;
     context.strokeStyle = 'coral';
@@ -367,14 +418,19 @@ function drawcard(word, x, y = 200) {
     context.fillStyle = "blue";
     context.textAlign = "center";
     context.textBaseline = "middle";
-    context.font = "40px serif";
-    context.fillText(word, x + 50, y + 80);
+    context.font = "50px serif";
+    context.fillText(word, x + 50, y + h / 2);
 }
 
-function drawclass(word, x, y = 450) {
+function drawclass(word, x, f, y = 480) {
     context.beginPath();
-    context.rect(x, y, 70, 70);
-    context.fillStyle = 'white';
+    context.rect(x, y, 60, 60);
+    if(f) {
+        context.fillStyle = 'gray';
+    }
+    else{
+        context.fillStyle = 'white';
+    }
     context.fill();
     context.lineWidth = 2;
     context.strokeStyle = 'coral';
@@ -382,8 +438,47 @@ function drawclass(word, x, y = 450) {
     context.fillStyle = "blue";
     context.textAlign = "center";
     context.textBaseline = "middle";
-    context.font = "40px serif";
-    context.fillText(word, x + 35, y + 35);
+    context.font = "30px serif";
+    context.fillText(word, x + 30, y + 30);
+}
+
+function drawline(y) {
+    context.beginPath();
+    context.moveTo(50, y);
+    context.lineTo(590, y);
+    context.closePath();
+    context.strokeStyle = 'black';
+    context.stroke();
+}
+
+function drawbutton(contex, x, y = 570) {
+    context.beginPath();
+    contex.rect(x, y, 80, 40);
+    context.fillStyle = 'white';
+    context.fill(contex);
+    context.lineWidth = 2;
+    context.strokeStyle = 'coral';
+    context.stroke(contex);
+    context.fillStyle = "blue";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.font = "30px serif";
+    context.fillText("決定", x + 40, y + 20);
+}
+
+function drawanswer(word, x, y) {
+    context.beginPath();
+    context.rect(x, y, 30, 30);
+    context.fillStyle = 'white';
+    context.fill();
+    context.lineWidth = 1;
+    context.strokeStyle = 'coral';
+    context.stroke();
+    context.fillStyle = "blue";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.font = "20px serif";
+    context.fillText(word, x + 15, y + 15);
 }
 
 function drawTitle() {
@@ -429,7 +524,7 @@ function drawResult() {
 }
 
 function drawBackground() {
-    context.fillStyle = '#99FF99';
+    context.fillStyle = '#66FFFF';
     context.fillRect(0, 0, 640, 640);
 }
 
@@ -456,7 +551,21 @@ function drawTurn() {
     context.shadowOffsetY = null;
     context.shadowBlur = null;
     let str = player === my_num ? "自分" : "相手";
-    context.fillText(String(str) + "のターンです", 320, 80);
+    context.fillText(String(str) + "のターンです", 320, 50);
+
+    context.fillStyle = "red";
+    context.font = "30px arial";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("turn " + String(turn), 60,50);
+}
+
+function drawround() {
+    context.fillStyle = "red";
+    context.font = "30px arial";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("round " + String(round), 60, 20);
 }
 
 function writeDB(x, y) {
