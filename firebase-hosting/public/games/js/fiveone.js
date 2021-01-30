@@ -1,26 +1,14 @@
-/**
- * **** **** **** **** **** **** **** ****
- * 定数
- * **** **** **** **** **** **** **** ****
- */
-INTERVAL = 32;          // 30FPS（1フレームを32ms間隔で処理）
+INTERVAL = 64;          // 30FPS（1フレームを32ms間隔で処理）
 CELL_SIZE = 64;        // セルサイズ
 
-// ステージの位置
 STAGE_LEFT = 104;
 STAGE_TOP = 104;
 STAGE_WIDTH = 640;
 STAGE_HEIGHT = 640;
 
-/**
- * **** **** **** **** **** **** **** ****
- * グローバル変数
- * **** **** **** **** **** **** **** ****
- */
 let canvas = null;              // キャンバス
 let context = null;             // 描画用コンテキスト
-// フラグ
-let phase = -1;                 // ゲームフェーズフラグ {0: タイトルフェーズ, 1: カウントダウンフェーズ, 2: タッチフェーズ, 3: ゲームオーバーフェーズ}
+let phase = -1;                 // ゲームフェーズフラグ
 let isTitleGuide = true;        // タイトルガイド点滅用フラグ {true: 表示, false: 非表示}
 
 // 時間制御用の最終取得時刻
@@ -39,7 +27,6 @@ let highScore = 0;              // ハイスコア
 
 let turn = null;
 let winner = [0, 0, 0];
-let placed = null;
 let round = 0;
 let my_hund = ["?", "?", "?"];
 let enemy_hund = ["?", "?", "?"];
@@ -52,17 +39,11 @@ let changed = null;
 let decision = new Path2D();
 let selected_card = null;
 let selected_class = null;
-let carddata = null;
-let classdata = null;
+const carddata = [110, 270, 430];
+const classdata = [["★", 65], ["●", 175], ["■", 285], ["▲", 395], ["✖", 505]];
+let enemy = null;
+let my_open = null;
 
-/**
- * **** **** **** **** **** **** **** ****
- * メイン処理
- * **** **** **** **** **** **** **** ****
- */
-/**
- * 全体の初期化処理
- */
 async function init() {
     // キャンバス要素の取得
     canvas = document.getElementById("a_canvas");
@@ -75,15 +56,12 @@ async function init() {
 
     // ゲームデータのリセット
 
-    // get_para();
-    // roomref = casualref.doc(room_id);
-    // await get_data();
-    // await enter_detector();
+    get_para();
+    roomref = casualref.doc(room_id);
+    // roomref = casualref.doc("d");
+    await get_data();
 }
 
-/**
- * メインループの開始
- */
 function runMainLoop() {
     // ゲームフェーズをタイトルフェーズに移行する。
     phase = 0;
@@ -92,10 +70,8 @@ function runMainLoop() {
     setTimeout(mainLoop, 0);
     lastTitleTime = Date.now();
 }
-/**
- * メインループ
- */
-function mainLoop() {
+
+async function mainLoop() {
     let mainLoopTimer = setTimeout(mainLoop, INTERVAL);
     let now = -1;
 
@@ -103,14 +79,12 @@ function mainLoop() {
     case 0:
         // タイトルフェーズ
         now = Date.now();
-        if (now - lastTitleTime >= 1000) {
-            // 0.5秒に1回のタイミングでタイトルガイドを点滅させる。
-            lastCountDownTime = Date.now();
-            resetData();
-            phase = 2;
+        if (now - lastTitleTime >= 3000) {
+            await resetData();
+            // lastCountDownTime = Date.now();
+            // phase = 1;
         }
         drawTitle();
-        drawround();
         break;
     case 1:             // 以下を追加
         // カウントダウンフェーズ
@@ -139,24 +113,22 @@ function mainLoop() {
     case 3:     // 以下を追加
         // ゲームオーバーフェーズ
         now = Date.now();
-        if (round === 3){
-            if (now - lastTimeUpTime >= 5000) {
+        if (now - lastTimeUpTime >= 5000) {
+            if (round === 1) {
                 lastTitleTime = Date.now();
-
-                if (my_num === 1){
-                    roomref.delete().then(function() {
+                if (my_num === 1) {
+                    roomref.delete().then(function () {
                         console.log("Document successfully deleted!");
-                    }).catch(function(error) {
+                    }).catch(function (error) {
                         console.error("Error removing document: ", error);
                     });
                 }
                 window.location.href = "../../title.html";
                 phase = 0;
+            } else {
+                lastTitleTime = Date.now();
+                phase = 0;
             }
-        }
-        else{
-            lastTitleTime = Date.now();
-            phase = 0;
         }
         drawBackground();
         drawMap();
@@ -166,25 +138,13 @@ function mainLoop() {
     }
 }
 
-/**
- * **** **** **** **** **** **** **** ****
- * イベント関連
- * **** **** **** **** **** **** **** ****
- */
-/**
- * ページ読込み
- */
 $(function() {
     // 全体の初期化処理
     init();
     // メインループの開始
     runMainLoop();
 });
-/**
- * ウィンドウ座標からキャンバス座標に変換する
- * @param wx		ウィンドウ上のx座標
- * @param wy		ウィンドウ上のy座標
- */
+
 function windowToCanvas(wx, wy) {
 	let bbox = canvas.getBoundingClientRect();
 	return {
@@ -192,29 +152,30 @@ function windowToCanvas(wx, wy) {
 		y: (wy - bbox.top)  * (canvas.height / bbox.height)
 	};
 }
-/**
- * ゲームデータのリセット
- */
-function resetData() {
+
+async function resetData() {
     count = 3;
     turn = 1;
     player = 1;
     resetMap();
     round += 1;
-    my_num = 1;
-    createhund();
     select = [false, false, false];
     selected = false;
     changed = false;
     selected_card = [false, false, false];
     selected_class = [false, false, false, false, false];
-    carddata = [110, 270, 430];
-    classdata = [["★", 65], ["●", 175], ["■", 285], ["▲", 395], ["✖", 505]];
-
+    enemy = ["?", "?", "?"];
+    my_open = ["?", "?", "?"];
+    if (my_num === 1) {
+        console.log("create");
+        await createhund();
+        await writehund();
+    }
+    await enter_detector();
+    lastCountDownTime = Date.now();
+    phase = 1;
 }
-/**
- * マップデータのリセット
- */
+
 function resetMap() {
     map = new Array(5);       // セル
     for (let y = 0; y < map.length; y++) {
@@ -224,11 +185,6 @@ function resetMap() {
         }
     }
 }
-/**
- * **** **** **** **** **** **** **** ****
- * イベント関連
- * **** **** **** **** **** **** **** ****
- */
 
 function createhund() {
     for (let i = 0; i < 7; i++){
@@ -238,21 +194,18 @@ function createhund() {
             let y = Math.floor(Math.random() * (max_y));
             let x = Math.floor(Math.random() * (max_x));
             if (i === 0){
-                console.log(x, y, "2");
                 map[y][x] = 2;
                 answer = returnclass(y);
                 break;
             }
-            else if(i === 1 || i === 2|| i === 3 && map[y][x] === 0){
-                console.log(x, y, "1");
+            else if((i === 1 || i === 2|| i === 3) && map[y][x] === 0){
                 map[y][x] = 1;
                 my_hund[i - 1] = returnclass(y);
                 break;
             }
-            else if (i === 4 || i === 5 || i === 6 && map[y][x] === 0){
-                console.log(x, y, "-1");
+            else if ((i === 4 || i === 5 || i === 6) && map[y][x] === 0){
                 map[y][x] = -1;
-                // enemy_hund[i - 4] = returnclass(y);
+                enemy[i - 4] = returnclass(y);
                 break;
             }
         }
@@ -261,38 +214,57 @@ function createhund() {
 }
 
 function changehund() {
-    console.log("change");
     for (let i = 0; i < selected_card.length; i++){
         if (selected_card[i]){
-            while (true){
-                let max_x = 3;
-                let max_y = 5;
-                let y = Math.floor(Math.random() * (max_y));
-                let x = Math.floor(Math.random() * (max_x));
-                if (map[y][x] === 0){
-                    console.log(x, y, "1");
-                    map[y][x] = 1;
-                    my_hund[i] = returnclass(y);
-                    selected_card[i] = false;
-                    break;
+            console.log("change");
+            my_open[i] = my_hund[i];
+            if (my_num === 1){
+                while (true){
+                    let max_x = 3;
+                    let max_y = 5;
+                    let y = Math.floor(Math.random() * (max_y));
+                    let x = Math.floor(Math.random() * (max_x));
+                    if (map[y][x] === 0){
+                        map[y][x] = 1;
+                        my_hund[i] = returnclass(y);
+                        selected_card[i] = false;
+                        break;
+                    }
                 }
             }
         }
     }
-    console.log(map);
+    writeopen();
+}
+
+function change_enemy() {
+    while (true){
+        let max_x = 3;
+        let max_y = 5;
+        let y = Math.floor(Math.random() * (max_y));
+        let x = Math.floor(Math.random() * (max_x));
+        if (map[y][x] === 0){
+            return returnclass(y);
+        }
+    }
 }
 
 function judge() {
     console.log("judge");
     for (let i = 0; i < selected_class.length; i++){
         if (selected_class[i]){
-            if (map[i].includes(2)){
+            if (answer === returnclass(i)){
                 console.log("正解！");
+                winner[round] = player;
+                lastTimeUpTime = Date.now();
+                phase = 3;
             }
             else{
                 console.log("不正解！");
             }
             selected_class[i] = false;
+            writeDB(returnclass(i));
+            my_answer[returnindex()] = returnclass(i);
             return;
         }
     }
@@ -306,72 +278,76 @@ function returnclass(y) {
     else if (y === 4) return "✖";
 }
 
+function returnindex() {
+    if (turn === 1 || turn === 2){
+        return 0;
+    }
+    else if (turn === 3 || turn === 4){
+        return 1;
+    }
+    else{
+        return 2;
+    }
+}
 
-
-/**
- * キャンバスへのマウスクリック
- */
 function onCanvasClick(e) {
     let loc = windowToCanvas(e.clientX, e.clientY);
     switch (phase) {
     case 2:     // 以下を追加
-        if (context.isPointInPath(decision, loc.x, loc.y) && selected) {
-            console.log("decision");
-            selected = false;
-            if (selected_card.includes(true)){
-                // selected_card = [false, false, false];
-                changehund();
-                changed = true;
-            } else if (selected_class.includes(true)) {
-                // selected_class = [false, false, false, false, false];
-                judge();
+        if (player === my_num){
+            if (context.isPointInPath(decision, loc.x, loc.y) && selected) {
+                console.log("decision");
+                selected = false;
+                if (selected_card.includes(true)){
+                    // selected_card = [false, false, false];
+                    changehund();
+                    changed = true;
+                } else if (selected_class.includes(true)) {
+                    // selected_class = [false, false, false, false, false];
+                    judge();
+                    console.log("next");
+                    player *= -1;
+                    turn += 1;
+                }
+                break;
             }
-            break;
-        }
 
-        if (!selected_card.includes(true) && !selected_class.includes(true)){
-            for (let i = 0; i < classdata.length; i++) {
-                drawclass(classdata[i][0], classdata[i][1], selected_class[i]);
-                if (context.isPointInPath(loc.x, loc.y)) {
-                    console.log("class", i);
-                    selected = true;
-                    if (selected_class[i]) {
-                        selected_class[i] = false;
-                        selected = false;
-                    } else {
-                        selected_class[i] = true;
+            if (!selected_card.includes(true)){
+                for (let i = 0; i < classdata.length; i++) {
+                    drawclass(classdata[i][0], classdata[i][1], selected_class[i]);
+                    if (context.isPointInPath(loc.x, loc.y)) {
+                        if (selected_class[i]) {
+                            selected_class[i] = false;
+                            selected = false;
+                        } else if (!selected_class.includes(true)){
+                            selected_class[i] = true;
+                            selected = true;
+                        }
+                        break;
                     }
-                    break;
+                }
+            }
+
+            if (!selected_class.includes(true) && !changed && (turn === 1 || turn === 2)) {
+                for (let i = 0; i < carddata.length; i++) {
+                    drawcard(my_hund[i], carddata[i], selected_card[i]);
+                    if (context.isPointInPath(loc.x, loc.y)) {
+                        if (selected_card[i]) {
+                            selected_card[i] = false;
+                            selected = false;
+                        } else {
+                            selected_card[i] = true;
+                            selected = true;
+                        }
+                        break;
+                    }
                 }
             }
         }
-
-        if (!selected_class.includes(true) && !changed) {
-            for (let i = 0; i < carddata.length; i++) {
-                drawcard(my_hund[i], carddata[i], selected_card[i]);
-                if (context.isPointInPath(loc.x, loc.y)) {
-                    console.log("card", i);
-                    selected = true;
-                    if (selected_card[i]) {
-                        selected_card[i] = false;
-                        selected = false;
-                    } else {
-                        selected_card[i] = true;
-                    }
-                    break;
-                }
-            }
-        }
-
         break;
     }
 }
 
-/**
- * **** **** **** **** **** **** **** ****
- * ビュー関連
- * **** **** **** **** **** **** **** ****
- */
 function drawMap() {
     drawcard(enemy_hund[0], carddata[0], false, 110);
     drawcard(enemy_hund[1], carddata[1], false, 110);
@@ -503,16 +479,16 @@ function drawTitle() {
 
 function drawResult() {
     let str;
-    if (winner === my_num){
+    if (winner[round] === my_num){
         str = "You Win!";
     }
-    else if (winner === 0){
+    else if (winner[round] === 0){
         str = "Draw";
     }
     else{
         str = "You Lose!";
     }
-    context.fillStyle = "white";
+    context.fillStyle = "black";
     context.font = "40px arial";
     context.textAlign = "center";
     context.textBaseline = "middle";
@@ -520,7 +496,7 @@ function drawResult() {
     context.shadowOffsetX = null;
     context.shadowOffsetY = null;
     context.shadowBlur = null;
-    context.fillText(str, 320, 80);
+    context.fillText(str, 320, 60);
 }
 
 function drawBackground() {
@@ -568,38 +544,123 @@ function drawround() {
     context.fillText("round " + String(round), 60, 20);
 }
 
-function writeDB(x, y) {
+function writeDB(str) {
     const subject_num= new Number(turn).toString();
     console.log("set " + subject_num);
-    roomref.collection("mapdata").doc(subject_num)
-        .set({"x" : x, "y" : y});
+    roomref.collection("mapdata" + round).doc(subject_num)
+        .set({"type" : str});
+}
+
+function writeopen() {
+    console.log("open");
+    roomref.collection("mapdata" + round).doc("open" + my_num)
+        .set({"zero" : my_open[0], "one" : my_open[1], "two" : my_open[2],});
+}
+
+function writehund(){
+    console.log("write hund");
+    roomref.collection("mapdata" + round).doc("hund")
+        .set({"zero" : enemy[0], "one" : enemy[1], "two" : enemy[2], "answer" : answer});
+}
+
+function writechange(x){
+    console.log("change enemy");
+    for (let i = 0; i < 3; i ++){
+        if (x > 0){
+            enemy[i] = change_enemy();
+            x -= 1;
+        }else{
+            enemy[i] = "?";
+        }
+    }
+    roomref.collection("mapdata" + round).doc("change")
+        .set({"zero" : enemy[0], "one" : enemy[1], "two" : enemy[2]});
 }
 
 async function enter_detector(){
     console.log("enter_detector");
-    let x, y;
-    let unsubscribe = await roomref.collection("mapdata").onSnapshot(function(querySnapshot){
-        if (player === my_num) console.log("enemy turn");
-        else{
+    let z, o, t, n;
+    let c = -1;
+    let x = 0;
+    let unsubscribe = await roomref.collection("mapdata" + round).onSnapshot(function(querySnapshot){
+        if (my_num === 1 && c === -1 && turn === 1){
+            console.log("enemy hund");
+            c += 1;
+        }
+        else if (my_num === -1 && turn === 2 && selected_card.includes(true)){
+            for (let i = 0; i < querySnapshot.size; i++) {
+                // console.log(querySnapshot.docs[i].id);
+                if (querySnapshot.docs[i].id === "change") {
+                    console.log(querySnapshot.docs[i].data());
+                    z = querySnapshot.docs[i].data().zero;
+                    o = querySnapshot.docs[i].data().one;
+                    t = querySnapshot.docs[i].data().two;
+                    if (z !== "?") my_hund[0] = z;
+                    if (o !== "?") my_hund[1] = o;
+                    if (t !== "?") my_hund[2] = t;
+                    selected_card = [false, false, false];
+                }
+            }
+        }
+        else if (player !== my_num){
             for (let i = 0; i < querySnapshot.size; i++){
                 // console.log(querySnapshot.docs[i].id);
-                // console.log(turn);
                 if (querySnapshot.docs[i].id == turn){
                     if (player !== my_num){
                         console.log(querySnapshot.docs[i].data());
                         // console.log(querySnapshot.docs[i].id);
-                        x = querySnapshot.docs[i].data().x;
-                        y = querySnapshot.docs[i].data().y;
-                        put(x, y);
+                        s = querySnapshot.docs[i].data().type;
+                        enemy_answer[returnindex()] = s;
+                        if (answer === s){
+                            winner[round] = player;
+                            lastTimeUpTime = Date.now();
+                            phase = 3;
+                        }
+                        console.log("next");
+                        player *= -1;
+                        turn += 1;
                     }
                     else{
-                        console.log("enemy turn");
+                        console.log("enemy");
                     }
+                    return;
+                }
+                else if ( c >= 0 && c <  3 && player !== my_num &&
+                    querySnapshot.docs[i].id === "open" + my_num * -1 * (c + 1) && (turn === 1 || turn === 2)){
+                    console.log(querySnapshot.docs[i].data());
+                    z = querySnapshot.docs[i].data().zero;
+                    o = querySnapshot.docs[i].data().one;
+                    t = querySnapshot.docs[i].data().two;
+                    if (z !== "?") {
+                        enemy_hund[0] = z;
+                        x += 1;
+                    }
+                    if (o !== "?") {
+                        enemy_hund[1] = o;
+                        x += 1;
+                    }
+                    if (t !== "?") {
+                        enemy_hund[2] = t;
+                        x += 1;
+                    }
+                    c += 1;
+                    if (my_num === 1){
+                        writechange(x);
+                    }
+                    return;
+                }
+                else if (querySnapshot.docs[i].id === "hund" && my_num === -1 && c === -1){
+                    console.log("my hund");
+                    console.log(querySnapshot.docs[i].data());
+                    my_hund[0] = querySnapshot.docs[i].data().zero;
+                    my_hund[1] = querySnapshot.docs[i].data().one;
+                    my_hund[2] = querySnapshot.docs[i].data().two;
+                    answer = querySnapshot.docs[i].data().answer;
+                    c += 1;
                 }
             }
         }
-        player *= -1;
-        turn += 1;
+        else if (player === my_num) console.log("enemy turn");
     });
     if (phase === 3){
         console.log("on fin");
