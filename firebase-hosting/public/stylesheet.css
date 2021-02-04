@@ -6,12 +6,60 @@ body {
   margin: 0 auto;
   max-width: 1920px;
 }
-
+.screen-btn{
+  display: inline-block;
+  color: #4e90af;
+  background-color: #e0f5ff;
+  
+  padding: 6px 0;
+  margin: 0 5px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 40px;
+}
+.game p{
+  font-size: 20px;
+  position: relative;
+  top: -20px;
+  
+}
+.game{
+  width: 150px;
+  height: 120px;
+  position: relative;
+  display: inline-block;
+  margin: 60px 20px;
+  top: 20px;
+}
+.geme-conteiner{
+  position: relative;
+  /*background-color: rgb(255, 186, 186);*/
+  height: 800px;
+  width: 85%;
+  z-index: 25;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;  
+  display: block;
+  font-size: 0px;
+}
 #select{
-  font-size: 0;
+  font-size: 0px;
   display: block;
   text-align: center;  
 }
+.casual-font {
+  font-family: "Source Sans Pro";
+  color: rgb(255, 255, 255);
+  line-height: 1.2;
+  text-align: center; 
+  display: inline-block; 
+  z-index: 15;
+  font-size: 30px;
+  top: -15%;
+  position: relative;
+}
+
 .cpu {
   background-image: -moz-linear-gradient( 90deg, rgba(255,232,206,0.99608) 0%, rgb(251,184,160) 100%);
   background-image: -webkit-linear-gradient( 90deg, rgba(255,232,206,0.99608) 0%, rgb(251,184,160) 100%);
@@ -21,11 +69,11 @@ body {
   display: inline-block; 
   border-radius: 15px;
   /*left: 723px;*/
-  top: -310px;
-  width: 12%;
-  height: 375px;
-  z-index: 7;
-  
+  top: -10px;
+  width: 13%;
+  height: 75px;
+  z-index: 7;  
+   
 }
 .custom {
   background-image: -moz-linear-gradient( 90deg, rgb(193,253,201) 0%, rgb(144,249,196) 50%, rgb(87,245,161) 100%);
@@ -36,9 +84,9 @@ body {
   display: inline-block; 
   /*left: 1182px;*/
   border-radius: 15px;
-  top: -310px;
-  width: 12%;
-  height: 375px;
+  top: -10px;
+  width: 13%;
+  height: 75px;
   z-index: 7;
   
 }
@@ -50,10 +98,10 @@ body {
   position: relative;
   display: inline-block; 
   /*left: 952px;*/
-  top: -310px;
   border-radius: 15px;
-  width: 12%;
-  height: 375px;
+  top: -10px;
+  width: 13%;
+  height: 75px;
   z-index: 7;
 
 }
@@ -65,10 +113,10 @@ body {
   position: relative;
   display: inline-block; 
   /*left: 493px;*/
-  top: -310px;
   border-radius: 15px;
-  width: 12%;
-  height: 375px;
+  top: -10px;
+  width: 13%;
+  height: 75px;
   z-index: 7;
 }
 #head p {
