@@ -2,15 +2,30 @@
 body {
     margin: 0;
 }
+a {
+  text-decoration: none;
+}
+#hup-up{
+    border-radius: 20px;
+    background-color: rgb(233, 237, 237);
+    position: relative;
+    width: 90%;
+    height: 80%;
+    z-index: 30;  
+    margin: 0 auto;
+    top: 100px;
+    opacity: 0.8;
+    display: none;
+}
 .main-conteiner{
   margin: 0 auto;
   max-width: 1920px;
+  max-height: 1080px;
 }
 .screen-btn{
   display: inline-block;
   color: #4e90af;
   background-color: #e0f5ff;
-  
   padding: 6px 0;
   margin: 0 5px;
   border-radius: 3px;
@@ -21,7 +36,6 @@ body {
   font-size: 20px;
   position: relative;
   top: -20px;
-  
 }
 .game{
   width: 150px;

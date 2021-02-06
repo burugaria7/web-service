@@ -11,8 +11,8 @@
     <div class="main-wrapper">
         <div class="main-conteiner">
             <div id="head"><p>NAME</p></div>
-
-            <div id="background"></div>
+            
+            <div id="background"><div id="hup-up"></div></div>
 
         <div id="select">    
             <div class="cpu"><p class="casual-font">cpu</p> </div>              
@@ -21,23 +21,31 @@
             <div class="rank"><p class="casual-font">rank</p> </div>              
         </div>
                 <div class="geme-conteiner">
-                    <div class="game"><img src="Fiveone_icon.png"><p>FiveOne</p></div>
-                    <div class="game"><img src="HasamiShogi_icon.png"><p>HasamiShogi</p></div>
-                    <div class="game"><img src="Gomokunarabe_icon.png"><p>Gomokunarabe</p></div>
-                    <div class="game"><img src="ConnectFour_icon.png"><p>ConnectFour</p></div>
-                    <div class="game"><img src="HasamiShogi_icon.png"><p>HasamiShogi</p></div>
-                    <div class="game"><img src="Gomokunarabe_icon.png"><p>Gomokunarabe</p></div>
-                    <div class="game"><img src="ConnectFour_icon.png"><p>ConnectFour</p></div>
+                    <div class="game"><a href="#" class="btn"><img src="Fiveone_icon.png"><p>FiveOne</p></a></div>
+                    <div class="game"><a href="#" class="btn"><img src="HasamiShogi_icon.png"><p>HasamiShogi</p></a></div>
+                    <div class="game"><a href="#" class="btn"><img src="Gomokunarabe_icon.png"><p>Gomokunarabe</p></a></div>
+                    <div class="game"><a href="#" class="btn"><img src="ConnectFour_icon.png"><p>ConnectFour</p></a></div>
+                    <div class="game"><a href="#" class="btn"><img src="HasamiShogi_icon.png"><p>HasamiShogi</p></a></div>
+                    <div class="game"><a href="#" class="btn"><img src="Gomokunarabe_icon.png"><p>Gomokunarabe</p></a></div>
+                    <div class="game"><a href="#" class="btn"><img src="ConnectFour_icon.png"><p>ConnectFour</p></a></div>
                 </div>    
-        </div>
-        </div>
+        
+       
+    </div>
+    
+    </div>
     </div>
 
-<!--ここからJquery
+<!--ここからJquery-->
 <script>
-
+    $(function(){
+        $('.btn').click(function(){
+            $('#hup-up').fadeIn(1000)});
+        $('.btn').click(function(){
+            $('.game').fadeOut()});
+    });
 </script>
-ここまで-->
+<!--ここまで-->
 
     <a href="index.html">auth</a>
 <!--    <a href="games/tictactoe.html">Tictactoe</a>-->
