@@ -12,7 +12,12 @@
         <div class="main-conteiner">
             <div id="head"><p>NAME</p></div>
             
-            <div id="background"><div id="hup-up"></div></div>
+        <div id="background">
+            <div id="hup-up"> 
+                <div class="close">✖</div>
+                <div class="matching"><p class="match">Matching</p></div>
+            </div>
+        </div>
 
         <div id="select">    
             <div class="cpu"><p class="casual-font">cpu</p> </div>              
@@ -43,7 +48,12 @@
             $('#hup-up').fadeIn(1000)});
         $('.btn').click(function(){
             $('.game').fadeOut()});
-    });
+        $('.close').click(function(){
+            $('#hup-up').fadeOut(1000)});
+        $('.close').click(function(){
+            $('.game').fadeIn(1000)});
+
+            });                 
 </script>
 <!--ここまで-->
 
