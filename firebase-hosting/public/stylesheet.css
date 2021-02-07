@@ -190,7 +190,7 @@ a {
     z-index: 3;
   }
 #background {
-    background-image: url("background.png");
+    background-image: url("/assets/images/background.png");
     position: absolute;
     left: 0px;
     top: 0px;
