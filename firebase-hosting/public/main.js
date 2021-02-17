@@ -27,6 +27,7 @@ function clearUserInfo() {
 function disableSignUpAndSignIn(login) {
   document.getElementById("sign-up").disabled = true;
   document.getElementById("sign-in").disabled = true;
+  document.getElementById("sign-in-google").disabled = true;
   document.getElementById("sign-out").disabled = false;
   document.getElementById("email").disabled = true;
   document.getElementById("password").disabled = true;
@@ -35,6 +36,7 @@ function disableSignUpAndSignIn(login) {
 function disableSignOut() {
   document.getElementById("sign-up").disabled = false;
   document.getElementById("sign-in").disabled = false;
+  document.getElementById("sign-in-google").disabled = false;
   signOut = document.getElementById("sign-out").disabled = true;
   email = document.getElementById("email").disabled = false;
   password = document.getElementById("password").disabled = false;
@@ -94,4 +96,36 @@ onSignOutButtonClicked = function () {
 
 function log(msg) {
   document.getElementById("log").innerText += `${msg}\n`;
+}
+
+const provider = new firebase.auth.GoogleAuthProvider();
+
+function signInGoogle() {
+  firebase.auth().signInWithPopup(provider)
+    .then(result => {
+      console.log('ログインしました。');
+
+    }).catch(error => {
+      const signinError = `
+        サインインエラー
+        エラーメッセージ： ${error.message}
+        エラーコード: ${error.code}
+        `
+      console.log(signinError);
+    });
+}
+
+function signOutGoogle() {
+  firebase.auth().onAuthStateChanged(user => {
+    firebase
+      .auth()
+      .signOut()
+      .then(() => {
+        console.log('ログアウトしました');
+        location.reload();
+      })
+      .catch((error) => {
+        console.log(`ログアウト時にエラーが発生しました (${error})`);
+      });
+  });
 }
